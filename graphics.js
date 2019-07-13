@@ -1404,7 +1404,7 @@ let mag = {
 					counter++;
 					if (counter > 100) {
 						console.log('ERROR: while loop timeout...');
-						return 'maximum number length (100) reached';
+						return tokens;
 						break;
 					}
 				}
@@ -1419,7 +1419,7 @@ let mag = {
 					counter++;
 					if (counter > 100) {
 						console.log('ERROR: while loop timeout...');
-						return 'maximum variable name length (100) reached';
+						return tokens;
 						break;
 					}
 				}
@@ -1439,19 +1439,12 @@ let mag = {
 				tokens.push([type, type]);
 			} else if (type == 'space') { // do nothing
 			} else if (type == 'unknown') {
-				return `unknown symbol: ${equationString[i]} (char. code: ${equationString.charCodeAt(i)})`;
+				tokens.push([type, `${equationString[i]}`]);
 			} else {
 				tokens.push(['operator', type, 2]);
 			}
 		}
-		
-		error = this.fixTokens(tokens);
-		
-		if (error === 0) {
-			return tokens;
-		} else {
-			return error;
-		}
+		return tokens;
 	},
 	
 	tokenDetails(token) {
@@ -1482,6 +1475,9 @@ let mag = {
 	
 	fixTokens(tokens) {
 		let len = tokens.length;
+		if (len < 1) {
+			return [];
+		}
 		for (let i = len - 2; i >= 0; i--) {
 			let type = tokens[i][0];
 			let kind = tokens[i][1];
@@ -1555,17 +1551,19 @@ let mag = {
 			// 3) check for colons -> A1:A4 represents cellRange from A1 to A4
 			else if (type == 'operator' && kind == 'colon') {
 				if (i == 0) {
-					return 'misplaced colon';
+					console.log('misplaced colon');
 				} else if (tokens[i+1][0] == 'cell' && tokens[i-1][0] == 'cell') {
 					// token prior and past colon are both valid cell definitions
 					tokens.splice(i-1, 3, ['cellRange', tokens[i-1][1], tokens[i+1][1]]);
 					i--;
 				} else {
-					return 'misplaced colon';
+					console.log('misplaced colon');
 				}
 			}
 		}
-		
+	},
+	
+	checkTokens(tokens) {
 		// Check if the equation makes sense!
 		//  -> check that the parenthesis make sense
 		//  -> check that every token is followed by a compatible token
@@ -1633,6 +1631,10 @@ let mag = {
 				} else {
 					hierarchy[level - 1][2]++;
 				}
+			} else if (type == 'colon') {
+				return 'misplaced colon, colon is reserved for cell ranges A1:A4';
+			} else if (type == 'unknown') {
+				return `unknown character: ${tokens[i][1]}`
 			}
 		}
 		if (level != 0) {
@@ -1859,6 +1861,20 @@ let mag = {
 			return this.getValue(RPN);
 		}
 	},
+	
+	singleCellList(cellList) {
+		let singleCells = [];
+		let len = cellList.length;
+		for (let i = 0; i < len; i++) {
+			if (typeof cellList[i] == 'string') {
+				singleCells.push(cellList[i]);
+			} else if (Array.isArray(cellList[i])) {
+				let stringList = mag.cellRangeToCellStrings(cellList[i][0], cellList[i][1]);
+				singleCells.push(...stringList);
+			}
+		}
+		return singleCells;
+	}
 }
 
 class magNode {
@@ -2109,6 +2125,16 @@ class magElement extends magNode {
 		this.alignment = options['alignment'];
 		this._size = options['size'];
 		this._position = options['position'];
+		if (typeof options['setSize'] == 'boolean') {
+			this.setSize = options['setSize'];
+		} else {
+			this.setSize = true;
+		}
+		if (options['setPosition']) {
+			this.setPosition = options['setPosition'];
+		} else {
+			this.setPosition = true;
+		}
 		
 		// prepare/set other html attributes
 		if (options['id']) {
@@ -2227,10 +2253,6 @@ class magElement extends magNode {
 	
 	set _size(value) {
 		this._sizeAbs = this.pointAbs(value);
-	}
-	
-	get _size() {
-		return this.size;
 	}
 	
 	set width(value) {
@@ -2498,7 +2520,6 @@ class magElement extends magNode {
 		} else if (this.restrictions.positionElement) {
 			rect = restrictions.positionElement.rectAbs;
 		}
-		
 	}
 	
 	// set the boundingRect by redefining one corner of the rectangle
@@ -2672,196 +2693,6 @@ class magElement extends magNode {
 		let yPos = this.alignY(topLeft[1], size[1], alignment);
 		return [xPos, yPos];
 	}
-	
-	// ------------------- OLD DEFINITIONS ------------------- //
-	
-	
-	/*
-	
-	// the input number is defined in accordance with scaling
-	// the returned point is in absolute values (pixels)
-	scaleNumber(int) {
-		if (this.scaling == 1 || this.scaling == 2) {
-			return int / 100 * this.parentWidth;
-		} else if (this.scaling == 3) {
-			return int / 100 * this.parentHeight;
-		} else {
-			return int;
-		}
-	}
-	
-	// the input point = [x,y] is defined in accordance with scaling
-	// the returned point is in absolute values (pixels)
-	scalePoint(point, scaling = this.scaling) {
-		if (scaling == 0) {  // positions are already is pixels
-			return point;
-		} else if (scaling == 1) {  // scale height and width to height and width of parent node
-			return [point[0] / 100 * this.parentWidth, point[1] / 100 * this.parentHeight];
-		} else if (scaling == 2) {  // scale everything according to the width of the parent node
-			return point.map(value => value / 100 * this.parentWidth);
-		} else if (scaling == 3) {  // scale everything according to the height of the parent node
-			return point.map(value => value / 100 * this.parentHeight);
-		} else {  // unknown scaling
-			return -1
-		}
-	}
-	
-	// the input point = [x,y] is in absolute values (pixels)
-	// the returned point is in accordance with scaling
-	scalePointInverse(point, scaling = this.scaling) {
-		if (scaling == 0) {  // positions are already relative
-			return point;
-		} else if (scaling == 1) {  // scale height and width to height and width of parent node
-			return [point[0] * 100 / this.parentWidth, point[1] * 100 / this.parentHeight];
-		} else if (scaling == 2) {  // scale everything according to the width of the parent node
-			return point.map(value => value * 100 / this.parentWidth);
-		} else if (scaling == 3) {  // scale everything according to the width of the parent node
-			return point.map(value => value * 100 / this.parentHeight);
-		} else {  // unknown scaling
-			return -1
-		}
-	}
-	
-	alignTopLeft(pos, size, alignment = this.alignment) {
-		let topLeft = pos.slice();
-		if (alignment == 1 || alignment == 11 || alignment == 21) {
-			topLeft[1] -= size[1] / 2;
-		} else if (alignment == 2 || alignment == 12 || alignment == 22) {
-			topLeft[1] -= size[1];
-		}
-		if (alignment == 10 || alignment == 11 || alignment == 12) {
-			topLeft[0] -= size[0] / 2;
-		} else if (alignment == 20 || alignment == 21 || alignment == 22) {
-			topLeft[0] -= size[0];
-		}
-		return topLeft;
-	}
-	
-	alignTopLeftInverse(topLeft, size, alignment = this.alignment) {
-		size = mag.vectorMath(size, -1, '*');
-		return this.alignTopLeft(topLeft, size, alignment);
-	}
-	
-	alignCenter(pos, size, alignment = this.alignment) {
-		// shift position of center according to alignment (see top of page for details)
-		// the center position is used to define the position of some elements (e.g. circles)
-		let center = pos.slice();
-		if (alignment == 0 || alignment == 10 || alignment == 20) {
-			center[1] += size[1] / 2;
-		} else if (alignment == 2 || alignment == 12 || alignment == 22) {
-			center[1] -= size[1] / 2;
-		}
-		if (alignment == 0 || alignment == 1 || alignment == 2) {
-			center[0] += size[0] / 2;
-		} else if (alignment == 20 || alignment == 21 || alignment == 22) {
-			center[0] -= size[0] / 2;
-		}
-		return center;
-	}
-	
-	alignCenterReverse(center, size, alignment = this.alignment) {
-		size = mag.vectorMath(size, -1, '*')
-		return this.alignCenter(topLeft, size, alignment);
-	}
-	
-	// the following methods can be used to obtain the object's properties independent of it's current
-	// scaling and alignment. (position, size,... are different, depending on scaling and alignment)
-	getSize(scaling = 0) {
-		return this.scalePointInverse(this.sizeAbs, scaling);
-	}
-	
-	getPosition(scaling = 0, alignment = 0) {
-		let size = this.scalePointInverse(this.sizeAbs, scaling);
-		let position = this.scalePointInverse(this.positionAbs, scaling);
-		return this.alignTopLeftInverse(position, size, alignment);
-	}
-	
-	// the boundingRect is defined as [position, size] of a rectangle containing the element
-	getBoundingRect(scaling = 0) {
-		let size = this.scalePointInverse(this.sizeAbs, scaling);
-		let position = this.scalePointInverse(this.positionAbs, scaling);
-		return [this.alignTopLeftInverse(position, size, 0), size];
-	}
-	
-	// returns x interval [xmin, xmax] containing the element
-	getXrange(scaling = 0) {
-		let size = this.scalePointInverse(this.sizeAbs, scaling);
-		let position = this.scalePointInverse(this.positionAbs, scaling);
-		return [position[0], position[0] + size[0]];
-	}
-	
-	// returns y interval [ymin, ymax] containing the element
-	getYrange(scaling = 0) {
-		let size = this.scalePointInverse(this.sizeAbs, scaling);
-		let position = this.scalePointInverse(this.positionAbs, scaling);
-		return [position[1], position[1] + size[1]];
-	}
-	
-	getXYrange(scaling = 0) {
-		let size = this.scalePointInverse(this.sizeAbs, scaling);
-		let position = this.scalePointInverse(this.positionAbs, scaling);
-		return [[position[0], position[0] + size[0]], [position[1], position[1] + size[1]]];
-	}
-	
-	// the following methods can be used to manipulate the object's properties without knowledge of it's initial
-	// scaling and alignment. (position, size,... are different, depending on scaling and alignment)
-	setSize(size, scaling = 0) {
-		this._position = this.getPosition(scaling, this.alignment);
-		this.scaling = scaling;
-		this.size = size;
-	}
-	
-	setPosition(position, scaling = 0, alignment = 0) {
-		
-		this.size = this.getSize(scaling);
-		this.scaling = scaling;
-		this.alignment = alignment;
-		this.position = position;
-		
-		if (scaling != this.scaling) {
-			scalePoint(position, )
-		}
-	}
-	
-	setBoundingRect(rect, scaling = 0) {
-		this.size = this.scalePointInverse(rect[1]);
-		let position = this.scalePointInverse(rect[0]);
-		this.position = this.alignTopLeftInverse(position, this.size);
-	}
-	
-	// set the boundingRect by redefining one corner of the rectangle
-	// newPos = [float,float], corner = int (defined as alignment)
-	resizeByCorner(newPos, corner) {
-		let rect = this.getBoundingRect().slice();
-		let pos = rect[0];
-		let size = rect[1];
-		
-		// adjust y coordinates
-		if (corner == 0 || corner == 10 || corner == 20) {
-			size[1] = size[1] - newPos[1] + pos[1];
-			pos[1] = newPos[1];
-		} else if (corner == 2 || corner == 12 || corner == 22) {
-			size[1] = newPos[1] - pos[1];
-		}
-		// adjust x coordinates
-		if (corner == 0 || corner == 1 || corner == 2) {
-			size[0] = size[0] - newPos[0] + pos[0];
-			pos[0] = newPos[0];
-		} else if (corner == 20 || corner == 21 || corner == 22) {
-			size[0] = newPos[0] - pos[0];
-		}
-		
-		// set new bounding rectangle
-		this.setBoundingRect(rect);
-	}
-	
-	restrictToElement(element, mode = 'xy') {
-		let border = element.getBoundingRect();
-		let newBoundingRect = mag.restrictPosition(this.getBoundingRect(), border, mode);
-		this.setPosition(newBoundingRect[0]);
-	}
-	
-	*/
 	
 	//--------- EVENT HANDLER FOR USER INTERACTION -------------//
 	
@@ -3325,11 +3156,15 @@ class magDOMelement extends magElement {
 		this._scaleFont();
 		
 		// apply positioning to node
-		let innerSize = this.sizeWithinBorder;	
-		this.node.style.width = `${innerSize[0]}px`;
-		this.node.style.height = `${innerSize[1]}px`;
-		this.node.style.left = `${this.positionAbs[0]}px`;
-		this.node.style.top = `${this.positionAbs[1]}px`;
+		let innerSize = this.sizeWithinBorder;
+		if (this.setSize) {
+			this.node.style.width = `${innerSize[0]}px`;
+			this.node.style.height = `${innerSize[1]}px`;
+		}
+		if (this.setPosition) {
+			this.node.style.left = `${this.positionAbs[0]}px`;
+			this.node.style.top = `${this.positionAbs[1]}px`;
+		}
 		
 		// in case a derived class has a custom rescale function
 		if (this.customRescale) {
@@ -3542,6 +3377,10 @@ class magDOMelement extends magElement {
 		}
 	}
 	
+	get fill() {
+		return this._fill;
+	}
+	
 	// ------------------------- FONT / TEXT ------------------------------------------------------ //
 	/**
 	*   The font object has the following attributes:
@@ -3582,7 +3421,7 @@ class magDOMelement extends magElement {
 			this.span = this.addTag('div');
 		}
 		this.span.innerHTML = this.text;
-		this.setElement();	
+		this.setElement();
 	}
 	
 	get text() {
@@ -3651,7 +3490,7 @@ class magDOMelement extends magElement {
 				return `${value / 100 * this.absoluteFontSize}px`;
 			}
 		} else {
-			console.log('ERROR: unknown length definition for DOM element!')
+			console.log('ERROR: unknown length definition for DOM element!');
 		}
 	}
 	
@@ -3759,37 +3598,39 @@ class magDOMelement extends magElement {
 			let spanSize = this.fontSize * lineHeight * noLines;
 			
 			// resize span to match size of text (width is always 100%)
-			this.span.style.width = `100%`;
-			this.span.style.height = `${actualSize}px`;
-			let shift = (actualSize - spanSize) / 2;
-			let topPos;
-			if (shift < 0) {
-				this.span.style.padding = `0px 0px ${-shift}px`;
-				topPos = shift;
-			} else {
-				this.span.style.padding = `${shift}px 0px 0px`;
-				topPos = 0;
-			}
+			if (this.setSize) {
+				this.span.style.width = `100%`;
+				this.span.style.height = `${actualSize}px`;
+				let shift = (actualSize - spanSize) / 2;
+				let topPos;
+				if (shift < 0) {
+					this.span.style.padding = `0px 0px ${-shift}px`;
+					topPos = shift;
+				} else {
+					this.span.style.padding = `${shift}px 0px 0px`;
+					topPos = 0;
+				}
 			
-			// set the vertical alignment by adding margins to the inner span element
-			let alignVert;
-			if (this._font.alignVert) {
-				alignVert = this._font.alignVert;
-			} else {
-				alignVert = magDefaults.font.alignVert;
+				// set the vertical alignment by adding margins to the inner span element
+				let alignVert;
+				if (this._font.alignVert) {
+					alignVert = this._font.alignVert;
+				} else {
+					alignVert = magDefaults.font.alignVert;
+				}
+				switch (alignVert) {
+					case 'bottom':
+						padding[0] = topPos + (this.sizeWithinBorder[1] - actualSize);
+						break;
+					case 'center':
+					case 'middle':
+						padding[0] = topPos + (this.sizeWithinBorder[1] - actualSize) / 2;
+						break;
+					default:
+						padding[0] += topPos;
+				}
+				this.span.style.margin = `${padding[0]}px ${padding[1]}px ${padding[2]}px ${padding[3]}px`;
 			}
-			switch (alignVert) {
-				case 'bottom':
-					padding[0] = topPos + (this.sizeWithinBorder[1] - actualSize);
-					break;
-				case 'center':
-				case 'middle':
-					padding[0] = topPos + (this.sizeWithinBorder[1] - actualSize) / 2;
-					break;
-				default:
-					padding[0] += topPos;
-			}
-			this.span.style.margin = `${padding[0]}px ${padding[1]}px ${padding[2]}px ${padding[3]}px`;
 			
 			// set other font/text attributes that are affected by scaling or require span
 			if (this._font.shadow) {
@@ -4043,20 +3884,44 @@ class magDOMinput extends magDOMmouseInteract {
 class magDOMinputEquation extends magDOMinput {
 	
 	constructor(parentNode, options = {}) {
-		options = mag.mergeObjects(options, magDefaults.magDOMinput);
 		super(parentNode, options);
 		
-		this.infoBox = new magDOMelement(parentNode, 'div', {scaling: 0, id: 'infoBox',
-			stroke: {style: 'none', width: 0}, fill: {color: [50, 50, 50, 0.8]}});
+		let font = {color: this.font.color, family: this.font.family, lineHeight: 1.2, overflow: 'initial', size: `${this.fontSizePixel}px`,
+			alignHor: 'left', alignVert: 'top', wrap: 'nowrap'};
+		let fill = {color: this.fill.color.slice()};
+		fill.color.push(0.7);
+		font.color.push(0.8);
+		
+		this.infoBox = new magDOMelement(parentNode, 'div', {scaling: 0, alignment: 0, id: 'infoBox', position: [this.leftAbs, this.bottomAbs], setSize: false,
+			stroke: {style: 'none', width: 0}, fill: fill, style: {zIndex: 5, padding: `${this.fontSizePixel / 6}px`}, font: font, text: '   '});
+		this.infoBox.hidden = true;
 		
 		if (options['spreadsheet']) {
-			this.spreadsheet = options['spreadsheet'];
+			//this.spreadsheet = options['spreadsheet'];
 		}
 		if (options['variableList']) {
 			this.variableList = options['variableList'];
 		}
-		this.parentCells = [];
+		
+		this.cellList = [];
+		this.variableList = [];
+		this.tokens = [];
+		this.RPN = [];
 		this.valid = false;
+	}
+	
+	set info(text) {
+		if (text == '') {
+			//this.infoBox.node.setAttribute('d', '');
+			this.infoBox.hidden = true;
+		} else {
+			this.infoBox.span.innerHTML = text;
+			this.infoBox.hidden = false;
+			
+			let sizeX = this.infoBox.span.scrollWidth;
+			let sizeY = this.infoBox.span.scrollHeight;
+			this.infoBox.size = [sizeX, sizeY];
+		}
 	}
 	
 	set active(bool) {
@@ -4064,12 +3929,14 @@ class magDOMinputEquation extends magDOMinput {
 		this.applyStyle();
 		if (bool) {
 			// focus
+			this.info = this.getInfoText();
 			if (this.valid) {
 				this.node.value = this.equation;
 			}
 		} else {
 			// blur
 			this.equation = this.node.value;
+			this.info = '';
 			if (this.valid) {
 				this.node.value = `${this.result}`;
 			}
@@ -4083,20 +3950,16 @@ class magDOMinputEquation extends magDOMinput {
 	set equation(val) {
 		this._equation = val;
 		this.tokens = mag.getTokens(val);
-		if (typeof this.tokens == 'string') {
+		mag.fixTokens(this.tokens);
+		this.error = mag.checkTokens(this.tokens);
+		if (this.error != 0) {
 			// error occured calculating tokens
 			this.result = NaN;
-			this.error = this.tokens;
 			this.valid = false;
 		} else {
 			// tokens created successfully
 			// -> check tokens for depencies on spreadsheet cells and variables
-			if (this.spreadsheet) {
-				this.checkCellDependencies();
-			}
-			if (this.variableList) {
-				this.checkVariableDependencies();
-			}
+			this.checkDependencies();
 			// -> calculate reverse polish notation
 			this.RPN = mag.getRPN(this.tokens);
 			if (typeof this.RPN == 'string') {
@@ -4130,60 +3993,39 @@ class magDOMinputEquation extends magDOMinput {
 		return this._equation;
 	}
 	
-	showInfoBox() {
-		
-		pos = [pos[0] - 0.45 * this.cellSize[0], pos[1] + 0.75 * this.cellSize[1]];
-		this.infoBoxText.position = pos;
-		let text = this.getInfoText(cell);
-		if (text == '') {
-			//this.infoBox.node.setAttribute('d', '');
-			this.infoBoxText.hidden = true;
-		} else {
-			this.infoBoxText.span.innerHTML = text;
-			this.infoBoxText.hidden = false;
-			let bbox = this.infoBoxText.span.getBoundingClientRect();
-			let minX = this.cellSize[0] * cell[0];
-			let maxX = minX + this.infoBoxText.span.scrollWidth + 0.1 * this.cellSize[0];
-			let minY = this.cellSize[1] * (cell[1] + 1);
-			let maxY = minY + this.infoBoxText.span.scrollHeight + 0.5 * this.cellSize[1];
-			let path = `M ${maxX} ${maxY} L ${minX} ${maxY} L ${minX} ${minY} L ${maxX} ${minY} L ${maxX} ${maxY}`;
-			//this.infoBox.node.setAttribute('d', path);
-		}
-	}
-	
 	getInfoText() {
-		let element = this.getCellFromTable(cell);
 		let str;
-		if (element == undefined) {
+		let len = this.tokens.length;
+		if (len == 0) {
 			return '';
-		} else if (element.input == undefined) {
+		} else if (len == 1 &&  this.tokens[0][0] == 'number') {
 			return '';
-		} else if (element.magEquation.RPN.length == 1 &&  element.magEquation.RPN[0][0] == 'number') {
-			return '';
+		} else if (typeof this.tokens == 'string') {
+			return `= NaN<Br>(${this.error})`;
 		} else {
-			if (element.type == 'equation') {
-				str = `= ${mag.numberToString(element.result)}`;
-			} else if (element.type == 'string') {
-				str = `= NaN<Br>(${element.result})`;
+			if (this.valid) {
+				str = `= ${mag.numberToString(this.result)}`;
+			} else {
+				str = `= NaN<Br>(${this.error})`;
 			}
-			let len = element.parentCells.length;
+			let len = this.cellList.length;
 			if (len > 0) {
-				str = `${str}<Br>_______________<Br>linked cells:`
+				str = `${str}<Br>_______________<Br>linked cells:`;
 				for (let i = 0; i < len; i++) {
-					let parentCell = element.parentCells[i];
-					if (typeof parentCell == 'string') {
-						let value = mag.variables[parentCell];
+					let cell = this.cellList[i];
+					if (typeof cell == 'string') {
+						let value = mag.variables[cell];
 						if (value == undefined) {
 							value = 'NaN';
 						} else {
 							value = mag.numberToString(value);
 						}
-						str = `${str}<Br>- ${parentCell} = ${value}`;
+						str = `${str}<Br>- ${cell} = ${value}`;
 					} else {
 						// cell range
-						let value = mag.cellRangeToArray(parentCell[0], parentCell[1]);
+						let value = mag.cellRangeToArray(cell[0], cell[1]);
 						value = mag.numberToString(value);
-						str = `${str}<Br>- ${parentCell[0]}:${parentCell[1]} = ${value}`;
+						str = `${str}<Br>- ${cell[0]}:${cell[1]} = ${value}`;
 					}
 				}
 			}
@@ -4191,49 +4033,54 @@ class magDOMinputEquation extends magDOMinput {
 		return str;
 	}
 	
-	checkCellDependencies() {
-		let oldParentCells = this.parentCells.slice();
-		this.parentCells = [];
-		let singleCellList = [];
+	checkDependencies() {
+		let oldCells = this.cellList.slice();
+		this.cellList = [];
+		let oldVariables = this.variableList.slice();
+		this.variableList = [];
 		let len = this.tokens.length;
 		for (let i = 0; i < len; i++) {
 			if (this.tokens[i][0] == 'cell') {
-				// single cells are directly added to the parent list
-				this.parentCells.push(this.tokens[i][1]);
-				singleCellList.push(this.tokens[i][1]);
-				this.spreadsheet.addChildToCell(this.tokens[i][1], this);
+				this.cellList.push(this.tokens[i][1]);
 			} else if (this.tokens[i][0] == 'cellRange') {
-				// cell ranges are added as an array [cell1, cell2]
-				this.parentCells.push([tokens[i][1], tokens[i][2]]);
-				let stringList = mag.cellRangeToCellStrings(tokens[i][1], tokens[i][2]);
-				singleCellList.push(...stringList);
-				let len2 = stringList.length;
-				for (let n = 0; n < len2; n++) {
-					this.spreadsheet.addChildToCell(stringList[n], this);
-				}
+				this.cellList.push([tokens[i][1], tokens[i][2]]);
+			} else if (this.tokens[i][0] == 'variable') {
+				this.variableList.push(this.tokens[i][1])
 			}
 		}
 		
-		// check if any former parent cells have been removed
-		len = oldParentCells.length;
+		if (this.spreadsheet) {
+			this.notifySpreadsheet(oldCells);
+		}
+		if (this.variableList) {
+			this.notifyVariableList(oldVariables);
+		}
+	}
+	
+	notifySpreadsheet(oldCells, newCells) {
+		oldCells = mag.singleCellList(oldCells);
+		newCells = mag.singleCellList(newCells);
+		// check if any former cell dependencies have been removed
+		len = oldCells.length;
 		for (let i = 0; i < len; i++) {
-			let oldParent = oldParentCells[i];
-			if (typeof oldParent == 'string') {
-				// sigle cell string
-				if (singleCellList.indexOf(oldParent) == -1) {
-					this.spreadsheet.removeChildFromCell(oldParent, this);
-				}
-			} else {
-				// cell range
-				let stringList = mag.cellRangeToCellStrings(oldParent[0], oldParent[1]);
-				let len2 = stringList.length;
-				for (let n = 0; n < len2; n++) {
-					if (singleCellList.indexOf(stringList[n]) == -1) {
-						this.spreadsheet.removeChildFromCell(stringList[n], this);
-					}
-				}
+			let oldCell = oldCells[i];
+			if (newCells.indexOf(oldCell) == -1) {
+				this.spreadsheet.removeChildFromCell(oldCell, this);
 			}
 		}
+		
+		// check if new cells were added
+		len = newCells.length;
+		for (let i = 0; i < len; i++) {
+			let newCell = newCells[i];
+			if (oldCells.indexOf(newCell) == -1) {
+				this.spreadsheet.addChildToCell(newCell, this);
+			}
+		}
+	}
+	
+	notifyVariableList(oldVariables) {
+		
 	}
 }
 

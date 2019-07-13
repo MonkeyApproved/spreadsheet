@@ -415,7 +415,7 @@ class userInterface {
 		let font2 = 'Helvetica';
 		let font3 = 'Montserrat';
 		
-		let font = {color: [255, 255, 255], family: 'Montserrat', overflow: '...', size: 80, alignHor: 'left', wrap: 'nowrap'};
+		let font = {color: [255, 255, 255], family: 'Montserrat', overflow: '...', size: 80, alignHor: 'center', wrap: 'nowrap'};
 		let stroke = {width: 0.3, style: 'solid', color: [200, 200, 200]};
 		let fill = {color: [20, 20, 20]};
 		
@@ -439,7 +439,8 @@ class userInterface {
 		this.test = new magDOMbutton(parentNode, {position: [0, 0], size: [30, 10], text: 'bob'});
 		this.test.activateEvents();
 		
-		this.test2 = new magDOMinputEquation(parentNode, {position: [40, 0], size: [30, 10], styleChanges: styleChanges, font: font, stoke: stroke, fill: fill});
+		this.test2 = new magDOMinputEquation(parentNode, {position: [40, 0], size: [30, 10], styleChanges: styleChanges, font: font, stoke: stroke, fill: fill,
+			spreadsheet: 'test'});
 		this.test2.activateEvents();
 	}
 	
