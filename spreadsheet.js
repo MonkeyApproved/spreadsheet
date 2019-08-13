@@ -395,9 +395,9 @@ class userInterface {
 		let commands2 = [['M', 10, 50], ['C', 10, 60, 20, 60, 20, 50], ['S',30, 40, 30, 50], ['S',40, 60, 40, 50], ['Q',50, 60, 50, 50], ['T', 60, 50]];
 		//let arc = [['M', 50, 30], ['A', 20, 40, 45, 0, 1, 70, 35]]
 		
-		this.svg = new magSVGcanvas(this.div, [10, 100], [80, 80], {alignment: 0, stroke: {width: 1, style: 'solid', color: [[130, 0, 130], 'red', 'blue', 'white']}, fill: {color: 'red', gradient: [[0, 0, 0, 0.3], 'white', 'to bottom left']}});
+		//this.svg = new magSVGcanvas(this.div, [10, 100], [80, 80], {alignment: 0});
 		
-		this.path = new magSVGpath(this.svg, commands2, {rotation: {angle: -10, center: [50, 50]}, stroke: {linejoin: 'round', width: 1}});
+		//this.path = new magSVGpath(this.svg, commands2, {rotation: {angle: -10, center: [50, 50]}, stroke: {linejoin: 'round', width: 1}});
 		//this.path2 = new magSVGpath(this.svg, arc, {rotation: {angle: -10, center: [50, 50]}, stroke: {linejoin: 'round', width: 1}});
 		//this.line = new magSVGline(this.svg, [[0,0], [10,10], [20,0], [30,10], [40,0]], {fill: {color: 'none'}, stroke: {linejoin: 'miter', dasharray: [20, 2]}})
 		//this.poly = new magSVGpolygon(this.svg, [[20,20],[30,20],[30,30],[20,30]]);
@@ -405,7 +405,7 @@ class userInterface {
 		
 		//this.poly.replaceCommand(2, ['L',35,35]);
 		
-		this.path.enableHighlight();
+		//this.path.enableHighlight();
 		//this.path2.enableHighlight();
 		
 		//this.path.applyTranslation([0, 200]);
@@ -416,7 +416,8 @@ class userInterface {
 		let font3 = 'Montserrat';
 		
 		let font = {color: [255, 255, 255], family: 'Montserrat', overflow: '...', size: 80, alignHor: 'center', wrap: 'nowrap'};
-		let stroke = {width: 0.3, style: 'solid', color: [200, 200, 200]};
+		let stroke = {width: 0.4, style: 'solid', color: [200, 200, 200]};
+		let stroke2 = {style: 'none', width: 0};
 		let fill = {color: [20, 20, 20]};
 		
 		let style1 = {fill: {color: [20, 20, 20]}};
@@ -433,15 +434,23 @@ class userInterface {
 													   transform: 'capitalize', letterSpacing: 10, wrap: 'nowrap', overflow: '...'}});
 		*/
 		//this.inputs1 = new magDOMinputList(this.div, [[0, 0], [20, 20], [30, 10]], [10, 2], mag.mergeObjects(settings, style0))
-		this.matrix = new magDOMspreadsheet(this.div, {position: [0, 0], size: [100, 100], alignment: 0});
-		//this.in1 = new magDOMinputSpreadsheet(this.div, [50, 50], [20, 5], [20, 5], [2, 5], mag.mergeObjects(settings, style0, styleChanges));
+		let corlorCat = {numbers: [255,255,255], cells: [205, 81, 38], variables: [69, 162, 158]};
+		magDefaults.magEquationColors = {numbers: corlorCat.numbers, cells: corlorCat.cells, variables: corlorCat.variables};
+		let colors = {cell: [45, 45, 45], selectedCell: [0, 0, 0, 0.8], selectedLabel: [255, 255, 255, 0.2], label: corlorCat.variables,
+			line: [209, 232, 226], parents: [150, 0, 0], children: [0, 150, 0]};
+		let label = {}
 		
+		this.matrix = new magDOMvariableManager(this.div, {position: [0, 0], size: [50, 100], alignment: 0, cellColors: colors, font: {color: colors.line},
+			label: {rowLabel: false, columnLabel: 5, font: {color: [39, 39, 39], size: 95}}});
+		//this.in1 = new magDOMinputSpreadsheet(this.div, [50, 50], [20, 5], [20, 5], [2, 5], mag.mergeObjects(settings, style0, styleChanges));
+		/*
 		this.test = new magDOMbutton(parentNode, {position: [0, 0], size: [30, 10], text: 'bob'});
 		this.test.activateEvents();
 		
-		this.test2 = new magDOMinputEquation(parentNode, {position: [40, 0], size: [30, 10], styleChanges: styleChanges, font: font, stoke: stroke, fill: fill,
+		this.test2 = new magDOMinputEquation(parentNode, {position: [40, 0], size: [20, 4], styleChanges: styleChanges, font: font, stroke: stroke, fill: fill,
 			spreadsheet: 'test'});
 		this.test2.activateEvents();
+		*/
 	}
 	
 	hideMenus() {

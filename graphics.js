@@ -59,14 +59,16 @@ Object.assign(magDefaults, { // mag class defaults
 	magDOMloadHTML: {id: 'magDOMloadHTML'},
 	
 	// html input elements
-	magDOMspreadsheet: {id: 'magDOMspreadsheet', font: {color: [255, 255, 255], family: 'Montserrat', overflow: '...', size: 80, alignHor: 'center', alignVert: 'center', wrap: 'nowrap'},
-						cellColors: {cell: [80, 80, 80], selected: [0, 0, 0, 0.4], label: [120, 120, 120], line: [255, 255, 255], parents: [150, 0, 0], children: [0, 150, 0], info: 0},
-						lineWidth: 0.2, cellSize: [20, 5]},
+	magDOMtable: {id: 'table', font: {color: [255, 255, 255], family: 'Montserrat', overflow: '...', size: 70, alignHor: 'center', alignVert: 'center', wrap: 'nowrap'},
+		cellColors: {cell: [80, 80, 80], selectedCell: [0, 0, 0, 0.4], selectedLabel: [255, 255, 255, 0.2], label: [120, 120, 120], line: [255, 255, 255], parents: [150, 0, 0], children: [0, 150, 0], info: 0},
+		lineWidth: 0.15, cellSize: [20, 5]},
+	magEquationColors: {numbers: [255,255,255], cells: [154, 23, 80], variables: [69, 162, 158]},
+	magDOMvariableList: {id: 'variableList', tableSize: [2, 50], label: {rowLabel: false, columnLabel: 5}, cellSize: [50, 5]},
 	magDOMbutton: {id: 'magDOMbutton', font: {color: [255, 255, 255], family: 'Montserrat', size: 80, alignHor: 'center', alignVert: 'center', wrap: 'nowrap'}},
 	magDOMinput: {id: 'magDOMinput', styleChanges: {active: {}, inactive: {}, activeHover: {}, inactiveHover: {}}, 
-					  font: {color: [255, 255, 255], family: 'Montserrat', size: 80, alignHor: 'center', alignVert: 'center', wrap: 'nowrap', overflow: '...'}},
+		font: {color: [255, 255, 255], family: 'Montserrat', size: 80, alignHor: 'center', alignVert: 'center', wrap: 'nowrap', overflow: '...'}},
 	magDOMslider: {id: 'magDOMslider', main: {style: {stroke: 0.5}}, slider: {style: {stroke: 'white', strokeWidth: 0.5, fill: 'black'}},
-	               eventSettings: magDefaults.eventSetting},
+		eventSettings: magDefaults.eventSetting},
 	magDOMcolor: {id: 'magDOMcolor', main: {}, slider: {}, eventSettings: {mouseHandler: true}},
 	magDOMmouseInteract: {id: 'magDOMmouseInteract', styleChanges: {active: {}, inactive: {}, activeHover: {}, inactiveHover: {}}},
 	magDOMsubmenu: {id: 'magDOMsubmenu', mode: 'click'},
@@ -78,14 +80,13 @@ Object.assign(magDefaults, { // mag class defaults
 	magSVGelement: {id: 'magSVGelement', namespaceURI: 'http://www.w3.org/2000/svg', scaling: 2, stroke: {width: 0.5, color: 'black'}, fill: {color: 'red'}},
 	magSVGpath: {id: 'magSVGpath', fill: magDefaults.noFill},
 	magSVGpathElements: {lineOp: {scaling: 0, stroke: {color: 'black', width: 0.6}, fill: {color: 'none'}},
-		                  pointOp: {scaling: 0, stroke: {color: 'black', width: 0.6}, fill: {color: 'white'}},
-							   corner: {scaling: 0, stroke: {color: 'black', width: 0.6}, fill: {color: 'none'}}},
+		pointOp: {scaling: 0, stroke: {color: 'black', width: 0.6}, fill: {color: 'white'}},
+		corner: {scaling: 0, stroke: {color: 'black', width: 0.6}, fill: {color: 'none'}}},
 	magSVGLine: {id: 'magSVGline', fill: magDefaults.noFill},
 	magSVGpolygon: {id: 'magSVGpolygon', fill: magDefaults.solidFill},
 	magSVGcircle: {id: 'magSVGcircle', fill: magDefaults.solidFill},
 	magSVGselector: {id: 'magSVGselector', fill: {color: 'none'}, stroke: magDefaults.dashedStroke, endPoint: magDefaults.pointStyle,
-	                 line: magDefaults.lineStyle2, controlPoint: magDefaults.pointStyle2},
-	
+	 	line: magDefaults.lineStyle2, controlPoint: magDefaults.pointStyle2},
 	magLine: {id: 'magLine', style: magDefaults.lineStyle},
 	magRect: {id: 'magRect', style: magDefaults.solidStyle, cornerRadius: 0},
 	magCircle: {id: 'magCircle', style: magDefaults.solidStyle, alignment: 11},
@@ -791,6 +792,10 @@ let mag = {
 		return `${this.getColumnLabel(cell[0])}${this.getRowLabel(cell[1])}`;
 	},
 	
+	cellToString2(column, row) {
+		return `${this.getColumnLabel(column)}${this.getRowLabel(row)}`;
+	},
+	
 	stringToCell(str) {
 		let valid = true;
 		let len = str.length;
@@ -1454,7 +1459,7 @@ let mag = {
 		let kind = token[1];
 		if (type == 'operator') {
 			return `'${opReplace[kind]}' operator`;
-		} else if (type == 'leftParenthesis' || type == 'leftParenthesis') {
+		} else if (type == 'leftParenthesis' || type == 'rightParenthesis') {
 			return `'${opReplace[kind]}' parenthesis`;
 		} else if (type == 'comma') {
 			return `comma`;
@@ -1512,9 +1517,11 @@ let mag = {
 				}
 				
 				// 1.2) check for minus in front of parenthesis or function
+				/*
 				else if (tokens[i+1][0] == 'leftParenthesis' || tokens[i+1][0] == 'function') {
 					replace = 2;
 				}
+				*/
 				
 				if (replace == 1) {
 					if (kind == 'sub' && tokens[i+1][0] == 'number') {
@@ -1569,6 +1576,10 @@ let mag = {
 		//  -> check that every token is followed by a compatible token
 		//  -> if there are commas on the 'lowest level', interpret the input as array
 		//  -> count number of arguments for every function with parenthesis, e.g. min(1,2,3)
+		
+		if (tokens.length == 0) {
+			return 0;
+		}
 		
 		let level = 0;
 		let groundLevelCommas = 0;
@@ -1874,6 +1885,37 @@ let mag = {
 			}
 		}
 		return singleCells;
+	},
+	
+	colorString(str, color) {
+		return `<font style="color:${mag.getColor(color)}">${str}</font>`;
+	},
+	
+	equationFromTokens(tokens, colors = magDefaults.magEquationColors) {
+		let replace = {add: '+', mul: '*', div: '/', pow: '^', part: '_', sub: '-',
+			leftParenthesis: '(', rightParenthesis: ')', comma: ',', mod: '%'};
+		let len = tokens.length;
+		let equation = '';
+		for (let i=0; i<len; i++) {
+			let str = '';
+			let type = tokens[i][0];
+			if (type == 'operator' || type == 'leftParenthesis' || type == 'rightParenthesis' || type == 'comma') {
+				str = `${replace[tokens[i][1]]}`;
+			} else if (type == 'function' || type == 'variable' || type == 'cell' || type == 'number') {
+				str = `${tokens[i][1]}`;
+			} else if (type == 'cellRange') {
+				str = `${tokens[i][1]}${tokens[i][2]}`;
+			}
+			
+			if (type == 'cell' || type == 'cellRange') {
+				equation += mag.colorString(str, colors.cells);
+			} else if (type == 'variable') {
+				equation += mag.colorString(str, colors.variables);
+			} else {
+				equation += str;
+			}
+		}
+		return equation;
 	}
 }
 
@@ -2154,6 +2196,11 @@ class magElement extends magNode {
 		this.setElement();  // set the elements attributes
 	}
 	
+	handleValueChange() {
+		this.setElement();
+		this.notifyChildren('rescale');
+	}
+	
 	checkParent() {
 		let currentParentWidth = this.getCurrentParentWidth();
 		let currentParentHeight = this.getCurrentParentHeight();
@@ -2216,7 +2263,7 @@ class magElement extends magNode {
 	
 	set sizeAbs(value) {
 		this._sizeAbs = value;
-		this.rescale();
+		this.handleValueChange();
 	}
 	
 	get sizeAbs() {
@@ -2225,7 +2272,7 @@ class magElement extends magNode {
 	
 	set widthAbs(value) {
 		this._sizeAbs[0] = value;
-		this.rescale();
+		this.handleValueChange();
 	}
 	
 	get widthAbs() {
@@ -2234,7 +2281,7 @@ class magElement extends magNode {
 	
 	set heightAbs(value) {
 		this._sizeAbs[1] = value;
-		this.rescale();
+		this.handleValueChange();
 	}
 	
 	get heightAbs() {
@@ -2275,7 +2322,7 @@ class magElement extends magNode {
 	
 	set positionAbs(value) {
 		this._positionAbs = value;
-		this.rescale();
+		this.handleValueChange();
 	}
 	
 	get positionAbs() {
@@ -2284,7 +2331,7 @@ class magElement extends magNode {
 	
 	set xPosAbs(value) {
 		this._positionAbs[0] = value;
-		this.rescale();
+		this.handleValueChange();
 	}
 	
 	get xPosAbs() {
@@ -2293,7 +2340,7 @@ class magElement extends magNode {
 	
 	set yPosAbs(value) {
 		this._positionAbs[1] = value;
-		this.rescale();
+		this.handleValueChange();
 	}
 	
 	get yPosAbs() {
@@ -2335,7 +2382,7 @@ class magElement extends magNode {
 	// rect = [[xpos, ypos], [width, height]]
 	set rectAbs(rect) {
 		this._positionAbs = rect[0];
-		this._sizeAbs = rect[1];
+		this.sizeAbs = rect[1];
 	}
 	
 	get rectAbs() {
@@ -2567,6 +2614,9 @@ class magElement extends magNode {
 	// the input is an x-dimension in accordance with scaling
 	// the returned number is in absolute values (pixels)
 	xNumberAbs(number, scaling = this.scaling) {
+		if (typeof number == 'string') {
+			return parseFloat(number);
+		}
 		if (scaling == 1 || scaling == 2) {
 			return number / 100 * this.parentWidth;
 		} else if (scaling == 3) {
@@ -2579,6 +2629,9 @@ class magElement extends magNode {
 	// the input is an y-dimension in accordance with scaling
 	// the returned number is in absolute values (pixels)
 	yNumberAbs(number, scaling = this.scaling) {
+		if (typeof number == 'string') {
+			return parseFloat(number);
+		}
 		if (scaling == 2) {
 			return number / 100 * this.parentWidth;
 		} else if (scaling == 1 || scaling == 3) {
@@ -2599,6 +2652,9 @@ class magElement extends magNode {
 	// the input is an absolte x-dimension (in pixels)
 	// the returned number is in accordance with scaling
 	xNumberRel(number, scaling = this.scaling) {
+		if (typeof number == 'string') {
+			number = parseFloat(number);
+		}
 		if (scaling == 1 || scaling == 2) {
 			return number * 100 / this.parentWidth;
 		} else if (scaling == 3) {
@@ -2611,6 +2667,9 @@ class magElement extends magNode {
 	// the input is an absolte y-dimension (in pixels)
 	// the returned number is in accordance with scaling
 	yNumberRel(number, scaling = this.scaling) {
+		if (typeof number == 'string') {
+			number = parseFloat(number);
+		}
 		if (scaling == 2) {
 			return number * 100 / this.parentWidth;
 		} else if (scaling == 1 || scaling == 3) {
@@ -2745,6 +2804,13 @@ class magElement extends magNode {
 	
 	event(eventType, eventName, scope, func, ...args) {
 		
+		// by adding Global to the end of eventType, the event is attached to the document (e.g. 'mousedownGlobal')
+		let global = false;
+		if (eventType.search('Global') != -1) {
+			eventType = eventType.split('Global')[0];
+			global = true;
+		}
+		
 		// attach event listener for the event (if it doesn't already exist)
 		if (!this.eventList[eventType]) {
 			switch (eventType) {
@@ -2754,7 +2820,11 @@ class magElement extends magNode {
 					document.addEventListener(eventType, this.handleKey.bind(this));
 					break;
 				default:
-					this.node.addEventListener(eventType, this.handleEvent.bind(this));
+					if (global) {
+						document.addEventListener(eventType, this.handleEvent.bind(this));
+					} else {
+						this.node.addEventListener(eventType, this.handleEvent.bind(this));
+					}
 			}
 			this.eventList[eventType] = {};
 		}
@@ -3419,9 +3489,11 @@ class magDOMelement extends magElement {
 		// this is necessary for the proper alignment
 		if (!this.span) {
 			this.span = this.addTag('div');
+			this.span.innerHTML = this.text;
+			this.setElement();
+		} else {
+			this.span.innerHTML = this.text;
 		}
-		this.span.innerHTML = this.text;
-		this.setElement();
 	}
 	
 	get text() {
@@ -3433,6 +3505,7 @@ class magDOMelement extends magElement {
 			this._font = mag.mergeObjects(settings, this._font);
 		} else {
 			this._font = settings;
+			this.node.style['line-height'] = '1';
 		}
 		
 		if (settings.family) {
@@ -3468,9 +3541,7 @@ class magDOMelement extends magElement {
 		}
 		
 		if (settings.lineHeight) {
-			this.node.style['line-height'] = settings.lineHeight;
-		} else {
-			this.node.style['line-height'] = '1';
+			this.node.style['line-height'] = `${settings.lineHeight}`;
 		}
 		
 		this._scaleFont();
@@ -3523,6 +3594,10 @@ class magDOMelement extends magElement {
 				return size / 100 * this.sizeWithinBorder[1];
 			case 'elementWidth':
 				return size / 100 * this.sizeWithinBorder[0];
+			case 'elementHeight2':
+				return size / 100 * this.sizeAbs[1];
+			case 'elementWidth2':
+				return size / 100 * this.sizeAbs[0];
 			case 'windowHeight':
 				return size / 100 * window.innerHeight;
 			case 'windowWidth':
@@ -3693,9 +3768,8 @@ class magDOMmouseInteract extends magDOMelement {
 	constructor(parentNode, tag, options = {}) {
 		options = mag.mergeObjects(options, magDefaults.magDOMmouseInteract);
 		super(parentNode, tag, options);
-		
 		this.styleChanges = options['styleChanges'];
-		this.style = this.styleChanges.inactive;
+		this.currentStyle = this.styleChanges.inactive;
 		this._active = false;
 		this._hover = false;
 	}
@@ -3719,18 +3793,18 @@ class magDOMmouseInteract extends magDOMelement {
 
 	applyStyle() {
 		if (this._hover && this._active) {
-			this.style = this.styleChanges.activeHover;
+			this.currentStyle = this.styleChanges.activeHover;
 		} else if (!this._hover && this._active) {
-			this.style = this.styleChanges.active;
+			this.currentStyle = this.styleChanges.active;
 		} else if (!this._hover && !this._active) {
-			this.style = this.styleChanges.inactive;
+			this.currentStyle = this.styleChanges.inactive;
 		} else if (this._hover && !this._active) {
-			this.style = this.styleChanges.inactiveHover;
+			this.currentStyle = this.styleChanges.inactiveHover;
 		}
 	}
 	
-	set style(options) {
-		this._style = options;
+	set currentStyle(options) {
+		this._currentStyle = options;
 		
 		if (options['stroke']) {
 			this.stroke = options['stroke'];
@@ -3745,8 +3819,8 @@ class magDOMmouseInteract extends magDOMelement {
 		}
 	}
 	
-	get style() {
-		return this._style;
+	get currentStyle() {
+		return this._currentStyle;
 	}
 
 	set active(bool) {
@@ -3886,42 +3960,53 @@ class magDOMinputEquation extends magDOMinput {
 	constructor(parentNode, options = {}) {
 		super(parentNode, options);
 		
-		let font = {color: this.font.color, family: this.font.family, lineHeight: 1.2, overflow: 'initial', size: `${this.fontSizePixel}px`,
+		let font = {color: this.font.color.slice(), family: this.font.family, lineHeight: 1.1, overflow: 'initial', size: `${this.fontSizePixel}px`,
 			alignHor: 'left', alignVert: 'top', wrap: 'nowrap'};
+			font.color.push(0.8);
 		let fill = {color: this.fill.color.slice()};
 		fill.color.push(0.7);
-		font.color.push(0.8);
+		let stroke = {style: 'none', width: 0};
+		this.infoBoxOffset = [0, 0];
+		if (options['infoBox']) {
+			if (options.infoBox['fill']) {
+				fill = options.infoBox['fill'];
+			}
+			if (options.infoBox['font']) {
+				font = options.infoBox['font'];
+			}
+			if (options.infoBox['stroke']) {
+				stroke = options.infoBox['stroke'];
+			}
+			if (options.infoBox['offset']) {
+				this.infoBoxOffset = options.infoBox['offset'];
+			}
+		}
 		
-		this.infoBox = new magDOMelement(parentNode, 'div', {scaling: 0, alignment: 0, id: 'infoBox', position: [this.leftAbs, this.bottomAbs], setSize: false,
-			stroke: {style: 'none', width: 0}, fill: fill, style: {zIndex: 5, padding: `${this.fontSizePixel / 6}px`}, font: font, text: '   '});
+		this.infoBox = new magDOMelement(parentNode, 'div', {scaling: this.scaling, alignment: 0, id: 'infoBox', position: [],
+			setSize: false, stroke: stroke, fill: fill, style: {zIndex: 2, padding: `${this.fontSizePixel / 6}px`}, font: font, text: '   '});
 		this.infoBox.hidden = true;
-		
-		if (options['spreadsheet']) {
-			//this.spreadsheet = options['spreadsheet'];
-		}
-		if (options['variableList']) {
-			this.variableList = options['variableList'];
-		}
+		this.customRescale();
+		this.onEvent('input', this, 'inputChange');
 		
 		this.cellList = [];
 		this.variableList = [];
 		this.tokens = [];
 		this.RPN = [];
 		this.valid = false;
+		this.activateEvents();
+		this.equation = this.value;
+		this.lookUpTable = {};
 	}
 	
-	set info(text) {
-		if (text == '') {
-			//this.infoBox.node.setAttribute('d', '');
-			this.infoBox.hidden = true;
-		} else {
-			this.infoBox.span.innerHTML = text;
-			this.infoBox.hidden = false;
-			
-			let sizeX = this.infoBox.span.scrollWidth;
-			let sizeY = this.infoBox.span.scrollHeight;
-			this.infoBox.size = [sizeX, sizeY];
+	customRescale() {
+		if (this.infoBox) {
+			this.infoBox.font = {size: `${this.fontSizePixel}px`};
+			this.infoBox.position = [this.left + this.infoBoxOffset[0], this.bottom + this.infoBoxOffset[1]];
 		}
+	}
+	
+	inputChange(event) {
+		this.equation = this.node.value;
 	}
 	
 	set active(bool) {
@@ -3929,17 +4014,12 @@ class magDOMinputEquation extends magDOMinput {
 		this.applyStyle();
 		if (bool) {
 			// focus
-			this.info = this.getInfoText();
-			if (this.valid) {
-				this.node.value = this.equation;
-			}
+			this.node.value = this.equation;
+			this.infoBox.hidden = false;
 		} else {
 			// blur
-			this.equation = this.node.value;
-			this.info = '';
-			if (this.valid) {
-				this.node.value = `${this.result}`;
-			}
+			this.node.value = `${this.result}`;
+			this.infoBox.hidden = true;
 		}
 	}
 
@@ -3974,7 +4054,7 @@ class magDOMinputEquation extends magDOMinput {
 					this.result = NaN;
 					this.error = result;
 					this.valid = false;
-				} else if (isNaN(result)) {
+				} else if (isNaN(result) && !Array.isArray(result)) {
 					// unknonw error in value calculation
 					this.result = NaN;
 					this.error = 'equation result not defined';
@@ -3987,10 +4067,30 @@ class magDOMinputEquation extends magDOMinput {
 				}
 			}
 		}
+		this.updateInfoBox();
 	}
 	
 	get equation() {
 		return this._equation;
+	}
+	
+	setValue(value) {
+		this.equation = value;
+		this.value = `${value}`;
+		this.updateInfoBox();
+	}
+	
+	updateInfoBox() {
+		let infoText = this.getInfoText();
+		this.infoBox.span.innerHTML = infoText;
+		if (infoText == '') {
+			this.infoBox.hidden = true;
+		} else {
+			this.infoBox.hidden = false;
+			let sizeX = this.infoBox.span.scrollWidth;
+			let sizeY = this.infoBox.span.scrollHeight;
+			this.infoBox.size = [sizeX, sizeY];
+		}
 	}
 	
 	getInfoText() {
@@ -4001,16 +4101,16 @@ class magDOMinputEquation extends magDOMinput {
 		} else if (len == 1 &&  this.tokens[0][0] == 'number') {
 			return '';
 		} else if (typeof this.tokens == 'string') {
-			return `= NaN<Br>(${this.error})`;
+			return `= NaN<Br>_____________________<Br>identified equation:<Br>&nbsp;&nbsp;&nbsp;${mag.equationFromTokens(this.tokens)}<Br>(${this.error})`;
 		} else {
 			if (this.valid) {
-				str = `= ${mag.numberToString(this.result)}`;
+				str = `= ${mag.numberToString(this.result)}<Br>_____________________<Br>identified equation:<Br>&nbsp;&nbsp;&nbsp;${mag.equationFromTokens(this.tokens)}`;
 			} else {
-				str = `= NaN<Br>(${this.error})`;
+				str = `= NaN<Br>_____________________<Br>identified equation:<Br>&nbsp;&nbsp;&nbsp;${mag.equationFromTokens(this.tokens)}`;
 			}
 			let len = this.cellList.length;
 			if (len > 0) {
-				str = `${str}<Br>_______________<Br>linked cells:`;
+				str = `${str}<Br>_____________________<Br>linked cells:`;
 				for (let i = 0; i < len; i++) {
 					let cell = this.cellList[i];
 					if (typeof cell == 'string') {
@@ -4020,13 +4120,30 @@ class magDOMinputEquation extends magDOMinput {
 						} else {
 							value = mag.numberToString(value);
 						}
-						str = `${str}<Br>- ${cell} = ${value}`;
+						str += `<Br>- `;
+						str += mag.colorString(`${cell} = ${value}`, magDefaults.magEquationColors.cells);
 					} else {
 						// cell range
 						let value = mag.cellRangeToArray(cell[0], cell[1]);
 						value = mag.numberToString(value);
-						str = `${str}<Br>- ${cell[0]}:${cell[1]} = ${value}`;
+						str += `<Br>- `;
+						str += mag.colorString(`${cell[0]}:${cell[1]} = ${value}`, magDefaults.magEquationColors.cells);
 					}
+				}
+			}
+			len = this.variableList.length;
+			if (len > 0) {
+				str = `${str}<Br>_____________________<Br>linked variables:`;
+				for (let i = 0; i < len; i++) {
+					let variable = this.variableList[i];
+					let value = mag.variables[variable];
+					if (value == undefined) {
+						value = 'NaN';
+					} else {
+						value = mag.numberToString(value);
+					}
+					str += `<Br>- `;
+					str += mag.colorString(`${variable} = ${value}`, magDefaults.magEquationColors.variables);
 				}
 			}
 		}
@@ -4045,42 +4162,49 @@ class magDOMinputEquation extends magDOMinput {
 			} else if (this.tokens[i][0] == 'cellRange') {
 				this.cellList.push([tokens[i][1], tokens[i][2]]);
 			} else if (this.tokens[i][0] == 'variable') {
-				this.variableList.push(this.tokens[i][1])
+				this.variableList.push(this.tokens[i][1]);
 			}
 		}
 		
 		if (this.spreadsheet) {
-			this.notifySpreadsheet(oldCells);
+			oldCells = mag.singleCellList(oldCells);
+			let newCells = mag.singleCellList(this.cellList);
+			//this.submitChanges(oldCells, newCells, this.spreadsheet);
 		}
-		if (this.variableList) {
-			this.notifyVariableList(oldVariables);
-		}
-	}
-	
-	notifySpreadsheet(oldCells, newCells) {
-		oldCells = mag.singleCellList(oldCells);
-		newCells = mag.singleCellList(newCells);
-		// check if any former cell dependencies have been removed
-		len = oldCells.length;
-		for (let i = 0; i < len; i++) {
-			let oldCell = oldCells[i];
-			if (newCells.indexOf(oldCell) == -1) {
-				this.spreadsheet.removeChildFromCell(oldCell, this);
-			}
-		}
-		
-		// check if new cells were added
-		len = newCells.length;
-		for (let i = 0; i < len; i++) {
-			let newCell = newCells[i];
-			if (oldCells.indexOf(newCell) == -1) {
-				this.spreadsheet.addChildToCell(newCell, this);
-			}
+		if (this.variableManager) {
+			this.submitChanges(oldVariables, this.variableList, this.variableManager);
 		}
 	}
 	
-	notifyVariableList(oldVariables) {
+	submitChanges(oldList, newList, listManager) {
 		
+		// check if any old dependencies have been removed
+		let len = oldList.length;
+		for (let i = 0; i < len; i++) {
+			let oldDependence = oldList[i];
+			if (newList.indexOf(oldDependence) === -1) {
+				listManager.removeDependence(oldDependence, this);
+				delete this.lookUpTable[oldDependence];
+			}
+		}
+		
+		// check if new dependencies were added
+		len = newList.length;
+		for (let i = 0; i < len; i++) {
+			let newDependence = newList[i];
+			if (oldList.indexOf(newDependence) == -1) {
+				let value = listManager.addDependence(newDependence, this);
+				this.lookUpTable[newDependence] = value;
+			}
+		}
+	}
+	
+	modifyLookUpTable(varName, value) {
+		if (this.lookUpTable[varName]) {
+			this.lookUpTable[varName] = value;
+		} else {
+			console.log(`WARNING: cannot modify variable ${varName} (not found in lookup table)`)
+		}
 	}
 }
 
@@ -5282,133 +5406,1522 @@ class magDOMspreadsheet extends magDOMelement {
 	}
 }
 
-class magDOMinputSpreadsheet1 {
-	constructor(parentNode, size = [10, 10], options = {}) {
-		
-		
-		let colorCell = mag.getColor([50, 50, 50]);
-		let colorLine = mag.getColor([255, 255, 255]);
-		let bgdImage1 = `linear-gradient(to bottom, transparent 90%, ${colorLine} 90%)`;
-		let bgdImage2 = `linear-gradient(to right, ${colorCell} 98%, ${colorLine} 98%)`;
-		let bgdSize = '100px 20px';
-		
-		this.div = new magDOMelement(parentNode, 'div', {position: [0, 0], size: [100, 100], alignment: 0, st});
-		this.div.fill = {image: `${bgdImage1}, ${bgdImage2}`, size: bgdSize};
-		//parentNode.stroke = {color: 'black', width: '2px'}
-		/*
-		this.matrixSize = matrixSize;
-		this.activeInput = false;
-		this.activePos = [0, 0];
-		this.inputMatrix = [];
-		this.status = 'idle';
-		
-		for (let column = 0; column < matrixSize[0]; column++) {
-			let inputRow = [];
-			for (let row = 0; row < matrixSize[1]; row++) {
-				let pos = mag.vectorMath(offset, [column, row], '*');
-				pos = mag.vectorMath(position, pos, '+');
-				let newInput = new magDOMinputBasic(parentNode, pos, size, options);
-				newInput.onEvent('focus', this, 'active');
-				newInput.onEvent('blur', this, 'active');
-				newInput.node.dataset.column = column;
-				newInput.node.dataset.row = row;
-				newInput.node.dataset.id = magVars.inputCounter;
-				inputRow.push(newInput);
-			}
-			this.inputMatrix.push(inputRow);
-		}
-		
-		parentNode.onEvent('mouseover', this, 'hover');
-		parentNode.onEvent('mouseout', this, 'hover');
-		parentNode.keyup('Enter', this, 'key');
-		parentNode.keyup('Tab', this, 'key');
-		parentNode.onEvent('input', this, 'change');
-		
-		this.identifier = magVars.inputCounter;
-		magVars.inputCounter++;
-		
-		*/
-	}
+class magDOMtable extends magDOMelement {
 	
-	hover(event) {
-		if (event.target.dataset.id == this.identifier) {
-			let row = event.target.dataset.row;
-			let column = event.target.dataset.column;
-			if (event.type === 'mouseover') {
-				this.inputMatrix[column][row].hover = true;
-			} else if (event.type === 'mouseout') {
-				this.inputMatrix[column][row].hover = false;
-			}
-			this.inputMatrix[column][row].checkOverflow();
-		}
-	}
+	/* Options:
+	*  - lineWidth   -> width of the tables seperation lines (rows and columns)
+	*  - cellColors   -> define all cell colors: {cell, selected, label, line, parents, children}
+	*  - tableSize   -> size of table in [#columns, #rows]
+	+  - label   -> {rowLabel: 5, columnLabel: false}
+	*/
 	
-	active(event) {
-		if (event.target.dataset.id == this.identifier) {
-			let row = event.target.dataset.row;
-			let column = event.target.dataset.column;
-			if (event.type === 'focus') {
-				this._activeRow = row;
-				this.activeCol = column;
-			} else if (event.type === 'blur') {
-				this.activeField = false;
-			}
-		}
-	}
-	
-	change(event) {
-		if (event.target.dataset.id == this.identifier) {
-			let row = event.target.dataset.row;
-			let column = event.target.dataset.column;
-			this.inputMatrix[column][row].checkOverflow();
-		}
-	}
-	
-	key(event) {
-		console.log(event.key);
-		if (this.activeField) {
-			let oldColumn = 0;
-			switch (event.key) {
-				case 'Enter':
-					this.activeField = false;
-					break;
-				case 'Tab':
-					this.activeCol++;
-					if (this.activeCol == 0) {
-						this.activeRow++;
-					}
-					break;
-				case 'ArrowLeft':
-					this.activeCol++;
-					break;
-				case 'ArrowRight':
-					this.activeCol--;
-					break;
-				case 'ArrowUp':
-					this.activeRow--;
-					break;
-				case 'ArrowDown':
-					this.activeRow++;
-			}
-		}
-	}
-	
-	set activeField(field) {
-		// deactivate previous field
-		if (this._activeField) {
-			this._activeField.active = false;
-		}
-		// activate new field
-		if (field instanceof magDOMinputBasic) {
-			this._activeField = field;
-			this._activeField.active = true;
+	constructor(parentNode, options = {}) {
+		
+		options = mag.mergeObjects(options, magDefaults.magDOMtable);
+		super(parentNode, 'div', {id: 'table', style: {overflow: 'hidden'}, font: options['font']});
+		
+		// set up table
+		this.colors = options['cellColors'];
+		this.lineWidth = options['lineWidth'];
+		this.cellSize = options['cellSize'];
+		if (options['tableSize']) {
+			this.columns = options['tableSize'][0];
+			this.rows = options['tableSize'][1];
 		} else {
-			this._activeField = false;
+			this.columns = 26;
+			this.rows = 100;
+		}
+		this.label = [true, true];
+		this.labelSize = [3 * this.cellSize[1], this.cellSize[1]];
+		this.labelFont = this.font;
+		if (options['label']) {
+			if (options.label['rowLabel'] === false) {
+				this.label[0] = false;
+				this.labelSize[0] = 0;
+			} else if (options.label['rowLabel']) {
+				this.labelSize[0] = options.label['rowLabel'];
+			}
+			if (options.label['columnLabel'] === false) {
+				this.label[1] = false;
+				this.labelSize[1] = 0;
+			} else if (options.label['columnLabel']) {
+				this.labelSize[1] = options.label['columnLabel'];
+			}
+			if (options.label['font']) {
+				this.labelFont = mag.mergeObjects(options.label['font'], this.font);
+			}
+		}
+		this.initTable();
+		this.enableMouseScroll();
+		this.entries = {};
+	}
+	
+	initTable() {
+		this.columnPositions = mag.mathFunctions.range(0, this.cellSize[0] * this.columns, this.cellSize[0]);
+		this.rowPositions = mag.mathFunctions.range(0, this.cellSize[1] * this.rows, this.cellSize[1]);
+		
+		this.table = new magDOMelement(this, 'div', {id: 'spreadsheet', position: this.labelSize, size: this.tableSize, alignment: 0, scaling: 1,
+			fill: {color: this.colors.cell}});
+		this.canvas = new magSVGcanvas(this.table, [0, 0], [100, 100], {id: 'tableSVG', alignment: 0, scaling: 1});
+		this.lineWidthAbs = `${this.xNumberAbs(this.lineWidth)}`;
+		this.tableLines = new magSVGpath0(this.canvas, [], {scaling: 1, id: 'tableLines', stroke: {color: this.colors.line, width: this.lineWidthAbs}});
+		
+		if (this.label[0]) {
+			this.rowLabels = new magDOMelement(this, 'div', {id: 'rowLabel', position: [0, this.labelSize[1]], style: {zIndex: 1},
+				size: [this.labelSize[0], this.tableSize[1]], alignment: 0, scaling: 1, fill: {color: this.colors.label}});
+			this.rowCanvas = new magSVGcanvas(this.rowLabels, [0, 0], [100, 100], {id: 'rowLabelSVG', alignment: 0, scaling: 1});
+			this.rowLabelLines = new magSVGpath0(this.rowCanvas, [], {scaling: 1, id: 'rowLabelLines',
+				stroke: {color: this.colors.line, width: this.lineWidthAbs}});
+		}
+		
+		if (this.label[1]) {
+			this.columnLabels = new magDOMelement(this, 'div', {id: 'columnLabel', position: [this.labelSize[0], 0], style: {zIndex: 1},
+				size: [this.tableSize[0], this.labelSize[1]], alignment: 0, scaling: 1, fill: {color: this.colors.label}});
+			this.columnCanvas = new magSVGcanvas(this.columnLabels, [0, 0], [100, 100], {id: 'columnLabelSVG', alignment: 0, scaling: 1});
+			this.columnLabelLines = new magSVGpath0(this.columnCanvas, [], {scaling: 1, id: 'columnLabelLines',
+				stroke: {color: this.colors.line, width: this.lineWidthAbs}});
+		}
+		
+		if (this.label[0] && this.label[1]) {
+			this.corner = new magDOMelement(this, 'div', {id: 'corner', position: [0, 0], size: this.labelSize, style: {zIndex: 1},
+				alignment: 0, scaling: 1, fill: {color: [255,255,255]}});
+		}
+		this.setTableLines();
+	}
+	
+	enableMouseScroll() {
+		if (this.tableSize[0] + this.labelSize[0] > 100 || this.tableSize[1] + this.labelSize[1] > 100) {
+			this.scrollOuterDiv = new magDOMelement(this, 'div', {id: 'scrollOuterDiv', position: [0, 0], size: [100, 100],
+				alignment: 0, scaling: 1, style: {overflow: 'scroll'}});
+			this.scrollInnerDiv = new magDOMelement(this.scrollOuterDiv, 'div', {id: 'scrollInnerDiv', position: [0, 0],
+				size: [this.tableSize[0] + this.labelSize[0], this.tableSize[1] + this.labelSize[1]], alignment: 0, scaling: 1});
+			this.scrollOuterDiv.onEvent('scroll', this, 'scroll');
 		}
 	}
 	
-	get activeField() {
-		return this._activeField;
+	get tableWidth() {
+		let index = this.columnPositions.length - 1;
+		return this.columnPositions[index];
+	}
+	
+	get tableHeight() {
+		let index = this.rowPositions.length - 1;
+		return this.rowPositions[index];
+	}
+	
+	get tableSize() {
+		return [this.tableWidth, this.tableHeight];
+	}
+	
+	getCellSize(column, row) {
+		let sizeX = (this.columnPositions[column + 1] - this.columnPositions[column])  / this.tableWidth * 100;
+		let sizeY = (this.rowPositions[row + 1] - this.rowPositions[row])  / this.tableHeight * 100;
+		return [sizeX, sizeY];
+	}
+	
+	getCellPosition(column, row, alignment = 0) {
+		let posX = this.columnPositions[column] / this.tableWidth * 100;
+		let posY = this.rowPositions[row] / this.tableHeight * 100;
+		if (alignment == 0) {
+			return [posX, posY];
+		} else {
+			let size = this.getCellSize(column, row);
+			return this.alignPoint([posX, posY], size, alignment);
+		}
+	}
+	
+	setTableLines() {
+		let len = this.columnPositions.length;
+		let path = [['M', 0, 0], ['L', 100, 0], ['M', 0, 100], ['L', 100, 100]];
+		for (let i=1; i<len; i++) {
+			let pos = this.columnPositions[i] / this.tableWidth * 100;
+			path.push(['M', pos, 0], ['L', pos, 100]);
+		}
+		len = this.rowPositions.length;
+		let path2 = [['M', 0, 0], ['L', 0, 100], ['M', 100, 0], ['L', 100, 100]];
+		for (let i=1; i<len; i++) {
+			let pos = this.rowPositions[i] / this.tableHeight * 100;
+			path2.push(['M', 0, pos], ['L', 100, pos]);
+		}
+		if (this.label[0]) {
+			this.rowLabelLines.path = path2;
+		}
+		if (this.label[1]) {
+			this.columnLabelLines.path = path;
+		}
+		this.tableLines.path = [...path, ...path2];
+	}
+	
+	scroll() {
+		if (this.scrollOuterDiv) {
+			let topPos = -this.scrollOuterDiv.node.scrollTop + this.yNumberAbs(this.labelSize[1]);
+			let leftPos = -this.scrollOuterDiv.node.scrollLeft + this.xNumberAbs(this.labelSize[0]);
+			this.table.positionAbs = [leftPos , topPos];
+			
+			if (this.rowLabels) {
+				this.rowLabels.topAbs = topPos;
+			}
+			if (this.columnLabels) {
+				this.columnLabels.leftAbs = leftPos;
+			}
+		}
+	}
+	
+	setCell(column, row, value) {
+		if (column == -1 && row <= this.rows) {
+			// set row label
+			this.setRowLabel(row, value);
+		} else if (column <= this.columns && row == -1) {
+			// set column label
+			this.setColumnLabel(column, value);
+		} else if (column <= this.columns && row <= this.rows) {
+			this.setTableCell(column, row, value);
+		} else {
+			console.log(`cell index (column ${column}, row ${row}) out of range (${this.columns} columns, ${this.rows} rows)`);
+		}
+	}
+	
+	setTableCell(column, row, value) {
+		let cellString = mag.cellToString2(column, row);
+		if (this.entries[cellString]) {
+			// cell was set before -> replace value
+			this.entries[cellString].div.text = `${value}`;
+		} else {
+			// first time definition -> insert new div element
+			if (value != '') {
+				let pos = this.getCellPosition(column, row);
+				let size = this.getCellSize(column, row);
+				let div = new magDOMelement(this.table, 'div', {id: `cell ${cellString}`, position: pos, size: size, style: {zIndex: 1, userSelect: 'none'},
+					alignment: 0, scaling: 1, font: this.font, stroke: {style: 'none'}, text: `${value}`, layer: 'bottom'});
+				this.entries[cellString] = {div: div, cell: [column, row]};
+			}
+		}
+	}
+	
+	hideTableCell(column, row) {
+		let cellString = mag.cellToString2(column, row);
+		if (this.entries[cellString]) {
+			this.entries[cellString].div.hidden = true;
+		}
+	}
+	
+	showTableCell(column, row) {
+		let cellString = mag.cellToString2(column, row);
+		if (this.entries[cellString]) {
+			this.entries[cellString].div.hidden = false;
+		}
+	}
+	
+	setRowLabel(row, value) {
+		if (this.label[0]) {
+			let cellString = `row${row}`;
+			if (this.entries[cellString]) {
+				// column label was set before -> replace value
+				this.entries[cellString].div.innerHTML = `${value}`;
+			} else {
+				let pos = [0, this.rowPositions[row] / this.tableHeight * 100];
+				let size = [100, (this.rowPositions[row + 1] - this.rowPositions[row])  / this.tableHeight * 100];
+				let div = new magDOMelement(this.rowLabels, 'div', {id: `row label ${row}`, position: pos, size: size, style: {zIndex: 1, userSelect: 'none'},
+					alignment: 0, scaling: 1, font: this.labelFont, stroke: {style: 'none'}, text: `${value}`, layer: 'bottom'});
+				this.entries[cellString] = {div: div, row: row};
+			}
+		} else {
+			console.log('cannot add row label, table has no row label');
+		}
+	}
+	
+	setColumnLabel(column, value) {
+		if (this.label[1]) {
+			let cellString = `column${column}`;
+			if (this.entries[cellString]) {
+				// column label was set before -> replace value
+				this.entries[cellString].div.innerHTML = `${value}`;
+			} else {
+				let pos = [this.columnPositions[column] / this.tableWidth * 100, 0];
+				let size = [(this.columnPositions[column + 1] - this.columnPositions[column])  / this.tableWidth * 100, 100];
+				let div = new magDOMelement(this.columnLabels, 'div', {id: `column label ${column}`, position: pos, size: size, style: {zIndex: 1, userSelect: 'none'},
+					alignment: 0, scaling: 1, font: this.labelFont, stroke: {style: 'none'}, text: `${value}`, layer: 'bottom'});
+				this.entries[cellString] = {div: div, column: column};
+			}
+		} else {
+			console.log('cannot add column label, table has no column label');
+		}
+	}
+	
+	updateSizes() {
+		this.table.size = this.tableSize;
+		if (this.label[0]) {
+			this.rowLabels.size = [this.labelSize[0], this.tableSize[1]];
+		}
+		if (this.label[1]) {
+			this.columnLabels.size = [this.tableSize[0], this.labelSize[1]];
+		}
+		if (this.scrollInnerDiv) {
+			this.scrollInnerDiv.size = [this.tableSize[0] + this.labelSize[0], this.tableSize[1] + this.labelSize[1]];
+		}
+	}
+	
+	updateCellPositions() {
+		for (let key in this.entries) {
+			let cell = this.entries[key].cell;
+			if (cell[0] == -1) {
+				this.entries[key].div._position = [0, this.rowPositions[cell[1]] / this.tableHeight * 100];
+				this.entries[key].div.size = [100, (this.rowPositions[cell[1] + 1] - this.rowPositions[cell[1]])  / this.tableHeight * 100];
+			} else if (cell[1] == -1) {
+				this.entries[key].div._position = [this.columnPositions[cell[0]] / this.tableWidth * 100, 0];
+				this.entries[key].div.size = [(this.columnPositions[cell[0] + 1] - this.columnPositions[cell[0]])  / this.tableWidth * 100, 100];
+			} else {
+				this.entries[key].div._position = this.getCellPosition(...cell);
+				this.entries[key].div.size = this.getCellSize(...cell);
+			}
+		}
+	}
+}
+
+class magDOMinteractiveTable extends magDOMtable {
+	
+	constructor(parentNode, options) {
+		options = mag.mergeObjects(options, {id: 'interactiveTable'});
+		super(parentNode, options);
+		
+		this.enableTableInteraction();
+		this.mouseEvent = 'idle';
+		this._selectedCells = 'none';
+	}
+	
+	enableTableInteraction() {
+		this.onEvent('mousedownGlobal', this, 'mousedown');
+		this.onEvent('mousemoveGlobal', this, 'mousemove');
+		this.onEvent('mouseupGlobal', this, 'mouseup');
+		this.onEvent('mouseleaveGlobal', this, 'mouseup');
+		if (this.label[0]) {
+			this.rowSelection = new magSVGpath0(this.rowCanvas, [], {scaling: 1, id: 'rowSelection',
+				stroke: {color: this.colors.line, width: this.lineWidthAbs}, fill: {color: this.colors.selectedLabel}});
+		}
+		if (this.label[1]) {
+			this.columnSelection = new magSVGpath0(this.columnCanvas, [], {scaling: 1, id: 'columnSelection',
+				stroke: {color: this.colors.line, width: this.lineWidthAbs}, fill: {color: this.colors.selectedLabel}});
+		}
+		this.cellSelection = new magSVGpath0(this.canvas, [], {scaling: 1, id: 'cellSelection',
+			stroke: {color: this.colors.line, width: this.lineWidthAbs} , fill: {color: this.colors.selectedCell}});
+	}
+	
+	detectMouseElement(event) {
+		// detect which item the mouse is over
+		// -> currentCell, newCell, extendCell, tableRow, tableColumn, corner, outside
+		
+		// first check if mouse is inside the div containing the table!
+		let divPos = this.pointRel(this.getMousePosition(event));
+		let tablePos = this.pointRel(this.table.getMousePosition(event, this.table));
+		if (divPos[0] < 0 || divPos[0] > 100 || divPos[1] < 0 || divPos[1] > 100) {
+			return ['outside', 0];
+		} else if (divPos[0] > this.labelSize[0] && divPos[1] > this.labelSize[1]) {
+			let cell = this.posToCell(tablePos);
+			return ['cell', cell];
+		} else if (divPos[0] < this.labelSize[0] && divPos[1] > this.labelSize[1]) {
+			let row = this.getRowNumber(tablePos[1]);
+			if (tablePos[1] - this.rowPositions[row] < 2 * this.lineWidth) {
+				return ['rowLine', row];
+			} else if (this.rowPositions[row + 1] - tablePos[1] < 2 * this.lineWidth) {
+				return ['rowLine', row + 1];
+			} else {
+				return ['row', row];
+			}
+		} else if (divPos[0] > this.labelSize[0] && divPos[1] < this.labelSize[1]) {
+			let column = this.getColumnNumber(tablePos[0]);
+			if (tablePos[0] - this.columnPositions[column] < 2 * this.lineWidth) {
+				return ['columnLine', column];
+			} else if (this.columnPositions[column + 1] - tablePos[0] < 2 * this.lineWidth) {
+				return ['columnLine', column + 1];
+			} else {
+				return ['column', column];
+			}
+		} else if (divPos[0] < this.labelSize[0] && divPos[1] < this.labelSize[1]) {
+			return ['corner', 0];
+		} else {
+			return ['unknonw', 0];
+		}
+	}
+	
+	mousedown(event) {
+		let element = this.detectMouseElement(event);
+		switch (element[0]) {
+		case 'corner':
+		case 'outside':
+			this.mouseEvent = 'idle';
+			this.selectedCells = 'none';
+			break;
+		default:
+			this.mouseEvent = element;
+			this.handleMouseEvent(event);
+			break;
+		}
+	}
+	
+	mousemove(event) {
+		if (this.mouseEvent == 'idle') {
+			let element = this.detectMouseElement(event);
+			switch (element[0]) {
+			case 'cell':
+				this.node.style.cursor = 'default';
+				break;
+			case 'row':
+			case 'column':
+				this.node.style.cursor = 'pointer';
+				break;
+			case 'rowLine':
+				this.node.style.cursor = 'row-resize';
+				break;
+			case 'columnLine':
+				this.node.style.cursor = 'col-resize';
+				break;
+			default:
+				this.node.style.cursor = 'auto';
+			}
+		} else {
+			this.handleMouseEvent(event);
+		}
+	}
+	
+	mouseup(event) {
+		if (this.mouseEvent != 'idle') {
+			this.handleMouseEvent(event);
+			if (this.mouseEvent == 'cell' || this.mouseEvent == 'row' || this.mouseEvent == 'column') {
+				this.newCellsSelected();
+			}
+			this.newCellsSelected();
+			this.mouseEvent = 'idle';
+		}
+	}
+	
+	handleMouseEvent(event) {
+		let tablePos = this.pointRel(this.table.getMousePosition(event, this.table));
+		let column = this.getColumnNumber(tablePos[0]);
+		let row = this.getRowNumber(tablePos[1]);
+		switch (this.mouseEvent[0]) {
+		case 'cell':
+			this.selectedCells = [this.mouseEvent[1], [column, row]];
+			break;
+		case 'columnLine':
+			this.moveColumnLine(this.mouseEvent[1], tablePos[0]);
+			break;
+		case 'rowLine':
+			this.moveRowLine(this.mouseEvent[1], tablePos[1]);
+			break;
+		case 'row':
+			this.selectedCells = [[0, this.mouseEvent[1]], [this.columns - 1, row]];
+			break;
+		case 'column':
+			this.selectedCells = [[this.mouseEvent[1], 0], [column, this.rows - 1]];
+			break;
+		}
+	}
+	
+	newCellsSelected() {}
+	
+	set selectedCells(value) {
+		this._selectedCells = value;
+		this.updateCellSeletion();
+	}
+	
+	get selectedCells() {
+		return this._selectedCells;
+	}
+	
+	updateCellSeletion() {
+		if (Array.isArray(this.selectedCells)) {
+			let columnMin = Math.min(this.selectedCells[0][0], this.selectedCells[1][0]);
+			let columnMax = Math.max(this.selectedCells[0][0], this.selectedCells[1][0]);
+			let rowMin = Math.min(this.selectedCells[0][1], this.selectedCells[1][1]);
+			let rowMax = Math.max(this.selectedCells[0][1], this.selectedCells[1][1]);
+		
+			let topLeft = this.getCellPosition(columnMin, rowMin, 0);
+			let topRight = this.getCellPosition(columnMax, rowMin, 20);
+			let bottomRight = this.getCellPosition(columnMax, rowMax, 22);
+			let bottomLeft = this.getCellPosition(columnMin, rowMax, 2);
+		
+			this.cellSelection.path = [['M', ...topLeft], ['L', ...topRight], ['L', ...bottomRight], ['L', ...bottomLeft], ['Z']];
+			if (this.label[0]) {
+				this.rowSelection.path = [['M', 0, topLeft[1]], ['L', 100, topLeft[1]], ['L', 100, bottomLeft[1]], ['L', 0, bottomLeft[1]], ['Z']];
+			}
+			if (this.label[1]) {
+				this.columnSelection.path = [['M', topLeft[0], 0], ['L', topLeft[0], 100], ['L', topRight[0], 100], ['L', topRight[0], 0], ['Z']];
+			}
+		} else {
+			this.cellSelection.path = [];
+			if (this.label[0]) {
+				this.rowSelection.path = [];
+			}
+			if (this.label[1]) {
+				this.columnSelection.path = [];
+			}
+		}
+	}
+	
+	moveColumnLine(n, newPos) {
+		if (newPos - 10 * this.lineWidth < this.columnPositions[n-1]) {
+			newPos = this.columnPositions[n-1] + 10 * this.lineWidth;
+		}
+		let delta = newPos - this.columnPositions[n];
+		let len = this.columnPositions.length;
+		for (let i=n; i<len; i++) {
+			this.columnPositions[i] += delta;
+		}
+		this.updateSizes();
+		this.setTableLines();
+		this.updateCellSeletion();
+		this.updateCellPositions();
+	}
+	
+	moveRowLine(n, newPos) {
+		if (newPos - 10 * this.lineWidth < this.rowPositions[n-1]) {
+			newPos = this.rowPositions[n-1] + 10 * this.lineWidth;
+		}
+		let delta = newPos - this.rowPositions[n];
+		let len = this.rowPositions.length;
+		for (let i=n; i<len; i++) {
+			this.rowPositions[i] += delta;
+		}
+		this.updateSizes();
+		this.setTableLines();
+		this.updateCellSeletion();
+		this.updateCellPositions();
+	}
+	
+	eventToCell(event) {
+		let tablePos = this.pointRel(this.table.getMousePosition(event, this.table));
+		return [this.getColumnNumber(tablePos[0]), this.getRowNumber(tablePos[1])];
+	}
+	
+	posToCell(position) {
+		return [this.getColumnNumber(position[0]), this.getRowNumber(position[1])];
+	}
+	
+	getColumnNumber(xpos) {
+		let len = this.columnPositions.length;
+		for (let n=1; n<len; n++) {
+			if (this.columnPositions[n] > xpos) {
+				return n-1;
+			}
+		}
+	}
+	
+	getRowNumber(ypos) {
+		let len = this.rowPositions.length;
+		for (let n=1; n<len; n++) {
+			if (this.rowPositions[n] > ypos) {
+				return n-1;
+			}
+		}
+	}
+}
+
+class magDOMvariableManager extends magDOMinteractiveTable {
+	
+	constructor(parentNode, options) {
+		options = mag.mergeObjects(options, magDefaults.magDOMvariableList);
+		super(parentNode, options);
+		
+		this.variableList = {};
+		this.addVariableList(mag.variables);
+		
+		this.setColumnLabel(0, 'NAME');
+		this.setColumnLabel(1, 'VALUE');
+		this.setCurrentRow(0);
+	}
+	
+	addVariableList(list) {
+		let row = 0;
+		for (let key in list) {
+			this.setRowValues(row, key, list[key]);
+			row++;
+		}
+	}
+	
+	setRowValues(row, varName, varValue) {
+		this.setCurrentRow(row);
+		this.currentEntry.name.value = varName;
+		this.currentEntry.value.setValue(varValue);
+		this.updateVariableList();
+	}
+	
+	setCurrentRow(row) {
+		if (!this.entries[row]) {
+			// first time row is called -> create new inputs
+			let nameInput = new magDOMinput(this.table, {scaling: 1, size: this.getCellSize(0, row), position: this.getCellPosition(0, row),
+				id: `name${row}`, font: this.font, fill: {color: [0,0,0,0]}, stroke: {style: 'none'}, style: {zIndex: 1}});
+			let valueInput = new magDOMinputEquation(this.table, {size: this.getCellSize(1, row), position: this.getCellPosition(1, row),
+				id: `value${row}`, font: this.font, fill: {color: [0,0,0,0]}, stroke: {style: 'none'}, scaling: 1, style: {zIndex: 1},
+				infoBox: {fill: {color: [0,0,0,0.8]}, style: {zIndex: 2}, offset: [this.lineWidth, 0]}});
+			valueInput.variableManager = this;
+			this.entries[row] = {name: nameInput, value: valueInput};
+		}
+		this.currentRow = row;
+		this.currentEntry = this.entries[row];
+		this.initialName = this.currentEntry.name.value;
+		this.initialValue = this.currentEntry.value.result;
+	}
+	
+	updateVariableList() {
+		// check for name change
+		let initialName = this.initialName;
+		let finalName = this.currentEntry.name.value;
+		if (initialName != finalName) {
+			// variable name changed
+			if (initialName != '') {
+				// variable had a name before -> remove old entry
+				this.removeEntry(initialName);
+			}
+			if (finalName != '') {
+				// new variable has a name -> add new entry
+				this.addEntry(finalName, this.currentEntry);
+			}
+		} else if (finalName != '') {
+			// check for value change
+			let initialValue = this.initialValue;
+			let finalValue = this.currentEntry.value.result;
+			if (initialValue != finalValue) {
+				this.notifyVarChange(finalName, finalValue);
+			}
+		}
+		console.log(this.variableList)
+	}
+	
+	addEntry(varName, entry) {
+		console.log(`DEBUG: variable ${varName} is now defined`);
+		if (this.variableList[varName]) {
+			if (typeof this.variableList[varName].entry !== 'undefined') {
+				console.log(`WARNING: entry for ${varName} is being overwritten`);
+			}
+			this.variableList[varName].entry = entry;
+			this.notifyVarChange(varName, entry.value.result);
+		} else {
+			this.variableList[varName] = {entry: entry, children: []};
+		}
+	}
+	
+	removeEntry(varName) {
+		if (this.variableList[varName]) {
+			if (this.variableList[varName].children.length == 0) {
+				delete this.variableList[varName];
+				console.log(`DEBUG: deleting variable ${varName} from list`);
+			} else {
+				this.variableList[varName].entry = undefined;
+				this.notifyVarChange(varName, entry.value.result);
+				console.log(`DEBUG: variable ${varName} is now undefined`);
+			}
+		} else {
+			console.log(`WARNING: cannot remove entry for ${varName}, it does not exist`);
+		}
+	}
+	
+	addDependence(varName, child) {
+		if (this.variableList[varName]) {
+			// add to list
+			let index = this.variableList[varName].children.indexOf(child);
+			if (index === -1) {
+				this.variableList[varName].children.push(child);
+				console.log(`DEBUG: adding child to variable ${varName}`);
+			} else {
+				console.log(`WARNING: child added to variable ${varName} twice`);
+			}
+			// return the current value of the variable
+			
+		} else {
+			this.variableList[varName] = {entry: undefined, children: [child]};
+		}
+		return this.getVarValue(varName);
+	}
+	
+	removeDependence(varName, child) {
+		if (this.variableList[varName]) {
+			let index = this.variableList[varName].children.indexOf(child);
+			if (index === -1) {
+				console.log(`WARNING: could not remove child, it was not added to variable ${varName}`);
+			} else {
+				this.variableList[varName].children.splice(index, 1);
+				console.log(`DEBUG: removing child from variable ${varName}`);
+				if (this.variableList[varName].children.length == 0 && typeof this.variableList[varName].entry === 'undefined') {
+					delete this.variableList[varName];
+					console.log(`DEBUG: deleting variable ${varName} from list`);
+				}
+			}
+		} else {
+			console.log(`WARNING: could not remove child, variable ${varName} is unknown`);
+		}
+	}
+	
+	getVarValue(varName) {
+		if (typeof this.variableList[varName] == 'undefined') {
+			return 'undefined';
+		} else if (typeof this.variableList[varName].entry == 'number') {
+			return this.variableList[varName].entry;
+		} else if (typeof this.variableList[varName].entry == 'object') {
+			return this.variableList[varName].entry.value.result;
+		}
+	}
+	
+	notifyVarChange(varName, value) {
+		let len = this.variableList[varName].children.length;
+		for (let i=0; i<len; i++) {
+			this.variableList[varName].children[i].modifyLookUpTable(varName, value);
+		}
+	}
+	
+	newCellsSelected() {
+		let cell1 = this.selectedCells[0];
+		let cell2 = this.selectedCells[1];
+		if (cell1[0] == cell2[0] && cell1[1] == cell2[1]) {
+			// single cell selected
+			if (cell1[1] == this.currentRow) {
+				// user clicked on active row
+			} else {
+				// user clicked on new row
+				this.updateVariableList();
+				this.setCurrentRow(cell1[1]);
+			}
+		} else {
+			// multiple cells selected
+			this.hideInputs();
+		}
+	}
+}
+
+class spreadsheet extends magDOMtable {
+	
+	constructor(parentNode, options) {
+		options = mag.mergeObjects(options, magDefaults.magDOMspreadsheet);
+		super(parentNode, options);
+		
+		this.initInput();
+	}
+	
+	initInput() {
+		this.parentIndicator = new magSVGpath0(this.canvas, [], {scaling: 1, id: 'parentIndicator',
+			stroke: {color: mag.getColor(this.colors.parents), width: this.lineWidth * 1.5}, fill: {color: 'none'}});
+		this.childIndicator = new magSVGpath0(this.canvas, [], {scaling: 1, id: 'childrenIndicator',
+			stroke: {color: this.colors.children, width: this.lineWidth * 1.5}, fill: {color: 'none'}});
+			
+		let pos = this.getCellPosition(0, 0);
+		let size = this.getCellSize(1, 1);
+		let font = mag.mergeObjects({scaling: 'elementHeight2'}, this.font);
+		this.input = new magDOMinputEquation(this.table, {id: 'inputField', position: pos, size: size, scaling: 1,
+			alignment: 0, stroke: {width: `${this.xNumberAbs(this.lineWidth)*2}px`, color: this.colors.line}, font: font, fill: {color: this.colors.selected}});
+		this.input.activateEvents();
+	}
+	
+	//------------- HANDLE CELL DEPENDENCIES --------------------------------------------------//
+	// update all cells that are affected by a change of the current cell
+	// this is done by collecting all children and children's children and so on
+	// of the changed cell. For all of these cells also a list of parent cells
+	// (at least the ones affected by the change itself) is compiled.
+	// Now step by step, all cells which have no unupdated parents left are updated
+	// until either all cells were updated or a cyclic dependence is detected!
+	
+	handleCellChange(cellString) {
+		let changedCell = this.valueMatrix[cellString];
+		let affectedCells = {};
+		this.collectChildren(cellString, affectedCells);
+		if (affectedCells[cellString] == undefined) {
+			// no cyclic dependence back to orignally changed cell
+			let counter;
+			let removeCell;
+			let nextCell = cellString;
+			while (removeCell != nextCell) {
+				removeCell = nextCell;
+				if (affectedCells[removeCell]) {
+					delete affectedCells[removeCell];
+				}
+				counter = 0;
+				for (let cell in affectedCells) {
+					counter++;
+					let index = affectedCells[cell].parents.indexOf(removeCell);
+					if (index != -1) {
+						affectedCells[cell].parents.splice(index, 1);
+					}
+					if (affectedCells[cell].parents.length == 0) {
+						nextCell = cell;
+						this.calculateCellResult(cell);
+					}
+				}
+				if (counter > 0) {
+					console.log('ERROR: cyclic dependence detected!!!');
+					//mag.print(affectedCells);
+				}
+			}
+		} else {
+			console.log('ERROR: cyclic dependence detected!!!');
+			//mag.print(affectedCells);
+		}
+	}
+	
+	collectChildren(cellString, list) {
+		let children = this.valueMatrix[cellString].childCells;
+		let len = children.length;
+		for (let i = 0; i < len; i++) {
+			if (list[children[i]] == undefined) {
+				list[children[i]] = {parents: [cellString]};
+				this.collectChildren(children[i], list);
+			} else {
+				list[children[i]].parents.push(cellString);
+			}
+		}
+	}
+	
+	checkDependencies(element, cellString) {
+		let oldParentCells = element.parentCells.slice();
+		let tokens = element.magEquation.RPN;
+		element.parentCells = [];
+		let len = tokens.length;
+		let singleCellList = [];
+		for (let i = 0; i < len; i++) {
+			if (tokens[i][0] == 'cell') {
+				// single cells are directly added to the parent list
+				element.parentCells.push(tokens[i][1]);
+				singleCellList.push(tokens[i][1]);
+				this.addChildToCell(tokens[i][1], cellString);
+			} else if (tokens[i][0] == 'cellRange') {
+				// cell ranges are added as an array [cell1, cell2]
+				element.parentCells.push([tokens[i][1], tokens[i][2]]);
+				let stringList = mag.cellRangeToCellStrings(tokens[i][1], tokens[i][2]);
+				singleCellList.push(...stringList);
+				let len2 = stringList.length;
+				for (let n = 0; n < len2; n++) {
+					this.addChildToCell(stringList[n], cellString);
+				}
+			}
+		}
+		
+		// check if any former parents have been removed
+		len = oldParentCells.length;
+		for (let i = 0; i < len; i++) {
+			let oldParent = oldParentCells[i];
+			if (typeof oldParent == 'string') {
+				// sigle cell string
+				if (singleCellList.indexOf(oldParent) == -1) {
+					this.removeChildFromCell(oldParent, cellString);
+				}
+			} else {
+				// cell range
+				let stringList = mag.cellRangeToCellStrings(oldParent[0], oldParent[1]);
+				let len2 = stringList.length;
+				for (let n = 0; n < len2; n++) {
+					if (singleCellList.indexOf(stringList[n]) == -1) {
+						this.removeChildFromCell(stringList[n], cellString);
+					}
+				}
+			}
+		}
+	}
+	
+	addChildToCell(parentString, childString) {
+		let parentCell = this.valueMatrix[parentString];
+		if (parentCell == undefined) {
+			this.valueMatrix[parentString] = {childCells: [childString], parentCells: []}
+		} else if (parentCell.childCells.indexOf(childString) == -1) {
+			parentCell.childCells.push(childString);
+		}
+	}
+	
+	removeChildFromCell(parentString, childString) {
+		let parentCell = this.valueMatrix[parentString];
+		let index = parentCell.childCells.indexOf(childString);
+		if (index === -1) {
+			console.log(`ERROR: child ${childString} not found in ${parentString}...`);
+		} else {
+			parentCell.childCells.splice(index, 1);
+		}	
+	}
+	
+	//-------------- HELPER FUNCTIONS ---------------------------------------------------------//
+	
+	getCellFromTable(cell) {
+		let str = mag.cellToString(cell);
+		return this.valueMatrix[str];
+	}
+	
+	addCellToString(cell1, cell2 = undefined) {
+		let str = mag.cellToString(cell1);
+		if (cell2 != undefined) {
+			if (cell1[0] != cell2[0] || cell1[1] != cell2[1]) {
+				str = `${str}:${mag.cellToString(cell2)}`;
+			}
+		}
+		let start = this.input.node.selectionStart;
+		let end = this.input.node.selectionEnd;
+		
+		this.input.node.setRangeText(str, start, end, 'end');
+	}
+	
+	getCellCenter(tablePos) {
+		return [this.cellSize[0] * (tablePos[0] + 0.5) - 0.5 * this.lineWidth, this.cellSize[1] * (tablePos[1] + 0.5) - 0.5 * this.lineWidth];
+	}
+	
+	getTablePosition(event) {
+		let mousePos = this.table.getMousePosition(event, this.table);
+		let cellX = Math.floor(mousePos[0] / this.cellSize[0]);
+		let cellY = Math.floor(mousePos[1] / this.cellSize[1]);
+		return [cellX, cellY];
+	}
+	
+	//------------- USER EVENTS ---------------------------------------------------------------//
+	
+	setScroll(x, y) {
+		this.scrollOuterDiv.node.scrollTop = y;
+		this.scrollOuterDiv.node.scrollLeft = x;
+	}
+	
+	handleMouseEvent(event, mouseAction) {
+		// in case of mouse down -> initialize a new mouse event
+		if (mouseAction == 'down') {
+			let mouseEvent = this.detectMouseElement(event);
+			this.MEactive = true;
+			this.MEtype = mouseEvent[0];
+			this.MEelement0 = mouseEvent[1];
+			this.MEelement1 = mouseEvent[1];
+			this.MEselectionChange = false;
+			this.keys = {alt: event.altKey, shift: event.shiftKey};
+			//console.log(mouseEvent);
+		}
+		
+		// handle the event based on the type of event
+		if (this.MEactive) {
+			let element = this.getTablePosition(event);
+			if (this.keys.shift) {
+				// HANDLE EVENTS WITH THE SHIFT KEY PRESSED
+				if (this.MEtype == 'newCell' && mouseAction == 'down') {
+					// multiple cells selected
+					if (this.status == 'selectedMulti') {
+						this.selectMultipleCells(this.currentSelection[0], element);
+					} else {
+						this.selectMultipleCells(this.currentSelection, element);
+						this.status = 'selectedMulti';
+					}
+					if (this.inputActive) {
+						// deactivate input
+						this.blur();
+					}
+					event.preventDefault();
+				}	
+			} else if (this.keys.alt) {
+				// HANDLE EVENTS WITH THE ALT KEY PRESSED
+				switch (this.MEtype) {
+					case 'newCell':
+						if (mouseAction == 'move') {
+							if (this.MEelement1[0] != element[0] || this.MEelement1[1] != element[1]) {
+								this.showSelection2(this.MEelement0, element);
+								this.MEelement1 = element;
+							}
+						} else if (mouseAction == 'down') {
+							this.showSelection2(element);
+						} else if (mouseAction == 'up') {
+							if (this.status == 'typing') {
+								this.addCellToString(this.MEelement0, element);
+							} else if (this.status == 'selected') {
+								this.input.node.value = '';
+								this.addCellToString(this.MEelement0, element);
+								this.status = 'typing';
+								this.focus();
+							}
+							this.cellSelection2.node.setAttribute('d', '');
+						}
+						event.preventDefault();
+						break;
+					case 'tableRow':
+					case 'tableColumn':
+						let cell1, cell2;
+						if (this.MEtype == 'tableRow') {
+							cell1 = [0, this.MEelement0];
+							cell2 = [this.columns - 1, element[1]];
+							element = element[1];
+						} else {
+							cell1 = [this.MEelement1, 0];
+							cell2 = [element[0], this.rows - 1];
+							element = element[0];
+						}
+						if (element != this.MEelement1 || mouseAction == 'down') {
+							// in case row selection changed: update selection indicator
+							this.showSelection2(cell1, cell2);
+							this.MEelement1 = element;
+						} else if (mouseAction == 'up') {
+							if (this.status == 'typing') {
+								this.addCellToString(cell1, cell2);
+							} else if (this.status == 'selected') {
+								this.input.node.value = '';
+								this.addCellToString(cell1, cell2);
+								this.status = 'typing';
+								this.focus();
+							}
+							this.cellSelection2.node.setAttribute('d', '');
+						}
+						event.preventDefault();
+						break;
+				}
+			} else {
+				// HANDLE EVENTS WITH NO SPECIAL KEY PRESSED
+				switch (this.MEtype) {
+					case 'newCell':
+					case 'currentCell':
+						if (mouseAction == 'move') {
+							// check if mouse was moved over a different cell, if so: update selection indicator
+							event.preventDefault();
+							if (this.MEelement1[0] != element[0] || this.MEelement1[1] != element[1]) {
+								this.showSelection(this.MEelement0, element);
+								this.MEelement1 = element;
+							}
+						} else if (mouseAction == 'down') {
+							// in case the mouse down happened on a new cell: update selection indicator
+							if (this.MEtype == 'newCell') {
+								this.showSelection(element);
+							}
+						} else if (mouseAction == 'up') {
+							// mouse action ended: select the relevant cells
+							event.preventDefault();
+							if (this.MEelement0[0] == element[0] && this.MEelement0[1] == element[1]) {
+								// single cell selected
+								if (this.MEtype == 'newCell') {
+									this.selectNewCell(element);
+									this.status = 'selected';
+								} else if (!this.inputActive) {
+									// current cell was clicked -> activate cell
+									this.focus();
+									this.status = 'typing';
+								}
+							} else {
+								// multiple cells selected
+								this.selectMultipleCells(this.MEelement0, element);
+								this.status = 'selectedMulti';
+								if (this.inputActive) {
+									// deactivate input
+									this.blur();
+								}
+							}
+						}
+						break;
+					case 'extendCell':
+						if (mouseAction == 'up') {
+							// the user clicked on the extend cell button
+							let mouseEvent = this.detectMouseElement(event);
+							if (mouseEvent[0] == 'extendCell') {
+								this.extendCell(this.MEelement0);
+							}
+						}
+						break;
+					case 'tableRow':
+						if (this.inputActive) {
+							// deactivate input
+							this.blur();
+						}
+						if (element[1] != this.MEelement1 || mouseAction == 'down') {
+							// in case row selection changed: update selection indicator
+							this.selectRows(this.MEelement0, element[1]);
+							this.MEelement1 = element[1];
+							this.status = 'selectedMulti';
+							event.preventDefault();
+						}
+						break;
+					case 'tableColumn':
+						if (this.inputActive) {
+							// deactivate input
+							this.blur();
+						}
+						if (element[0] != this.MEelement1 || mouseAction == 'down') {
+							// in case row selection changed: update selection indicator
+							this.selectColumns(this.MEelement0, element[0]);
+							this.MEelement1 = element[0];
+							this.status = 'selectedMulti';
+							event.preventDefault();
+						}
+						break;
+				}
+			}
+		}
+		
+		// check if the mouse action has ended
+		if (mouseAction == 'up') {
+			this.MEactive = false;
+		}
+	}
+	
+	detectMouseElement(event) {
+		// detect which item the mouse is over
+		// -> currentCell, newCell, extendCell, tableRow, tableColumn, corner, outside
+		
+		// first check if mouse is inside table!
+		let mousePos = this.getMousePosition(event);
+		let cell = this.getTablePosition(event);
+		let lx = this.labelSize[0];
+		let ly = this.labelSize[1];
+		let x = mousePos[0];
+		let y = mousePos[1];
+		if (x > 0 && x < lx && y > ly) {
+			return ['tableRow', cell[1]];
+		} else if (x > lx && y > 0 && y < ly) {
+			return ['tableColumn', cell[0]];
+		} else if (x > 0 && x < lx && y > 0 && y < ly) {
+			return ['corner', 0];
+		} else if (x < 0 || y < 0 || x > this.sizeAbs[0] || y > this.sizeAbs[1]) {
+			// the mouse is outside the spreadsheet
+			// -> the return array indicates in which direction of the table the mouse is located
+			let outX = 0;
+			let outY = 0;
+			if (x < 0) {
+				outX = -1;
+			} else if (x > this.sizeAbs[0]) {
+				outX = 1;
+			}
+			if (y < 0) {
+				outY = -1;
+			} else if (y > this.sizeAbs[1]) {
+				outY = 1;
+			}
+			return ['outside', [outX, outY]];
+		}
+		
+		// next we have to compare the mouse position to the position of the currently selected cell
+		if (this.status != 'selected' && this.status != 'typing') {
+			// no cell is selected -> return new cell at mouse position
+			return ['newCell', this.getTablePosition(event)];
+		} else {
+			mousePos = this.table.getMousePosition(event, this.table);
+			let currentCell = this.getCellCenter(this.currentSelection)
+			let dx = mousePos[0] - currentCell[0];
+			let dy = mousePos[1] - currentCell[1];
+			let sx = this.cellSize[0] / 2;
+			let sy = this.cellSize[1] / 2;
+			let s1 = this.extendCellButtonSize;
+			let lw = this.lineWidth;
+			if (Math.abs(dx - sx) < s1 && Math.abs(dy - sy) < s1) {
+				return ['extendCell', this.currentSelection];
+			} else if (Math.abs(dx) < sx && Math.abs(dy) < sy) {
+				return ['currentCell', this.currentSelection];
+			} else {
+				return ['newCell', this.getTablePosition(event)];
+			}
+		}
+	}
+	
+	focus() {
+		this.inputActive = true;
+		this.input.node.focus();
+	}
+	
+	blur() {
+		this.inputActive = false;
+		this.input.node.blur();
+	}
+	
+	keypressed(event) {
+		let preventDefault = false;
+		if (this.status == 'selected') {
+			if (event.key == 'ArrowDown') {
+				this.changeSelection([0,1]);
+				preventDefault = true;
+			} else if (event.key == 'ArrowUp') {
+				this.changeSelection([0,-1]);
+				preventDefault = true;
+			} else if (event.key == 'ArrowLeft') {
+				this.changeSelection([-1,0]);
+				preventDefault = true;
+			} else if (event.key == 'ArrowRight') {
+				this.changeSelection([1,0]);
+				preventDefault = true;
+			} else if (event.key == 'Enter') {
+				this.status = 'typing';
+				this.focus();
+				preventDefault = true;
+			} else if (event.key == 'Tab') {
+				this.changeSelection([1,0]);
+				preventDefault = true;
+			} else if (event.key.length == 1) {
+				this.input.node.value = '';
+				this.status = 'typing';
+				this.focus();
+			}
+		} else if (this.status == 'typing') {
+			if (event.key == 'ArrowDown') {
+				this.changeSelection([0,1]);
+				preventDefault = true;
+			} else if (event.key == 'ArrowUp') {
+				this.changeSelection([0,-1]);
+				preventDefault = true;
+			} else if (event.key == 'ArrowRight') {
+				// check if cursor position is at the end of input
+				// if so -> select field to the right
+				if (this.input.node.selectionStart == this.input.node.value.length) {
+					this.changeSelection([1,0]);
+					preventDefault = true;
+				}
+			} else if (event.key == 'ArrowLeft') {
+				// check if cursor position is at the beginning of input
+				// if so -> select field to the left
+				if (this.input.node.selectionEnd == 0) {
+					this.changeSelection([-1,0]);
+					preventDefault = true;
+				}
+			} else if (event.key == 'Enter') {
+				this.blur();
+				this.status = 'selected';
+				this.changeSelection([0,1]);
+				preventDefault = true;
+			} else if (event.key == 'Tab') {
+				this.changeSelection([1,0]);
+				preventDefault = true;
+			} 
+		}
+		
+		if (preventDefault) {
+			event.preventDefault();
+		}
+	}
+	
+	// ------------- SELECT CELLS (SINGLE, MULTIPLE, ROWS, COLUMNS) -------------------//
+	
+	changeSelection(offset) {
+		let cell = mag.vectorMath(this.currentSelection, offset, '+');
+		if (cell[0] < 0) {
+			cell[0] = 0;
+		} else if (cell[0] > this.columns - 1) {
+			cell[0] = this.columns - 1;
+		}
+		if (cell[1] < 0) {
+			cell[1] = 0;
+		} else if (cell[1] > this.rows - 1) {
+			cell[1] = this.rows - 1;
+		}
+		this.selectNewCell(cell);
+	}
+	
+	selectNewCell(cell) {
+		this.saveOldResult();
+		let element = this.getCellFromTable(cell);
+		if (element == undefined) {
+			// cell was not yet defined -> start with empty input
+			this.input.value = '';
+		} else if (element.div == undefined && Array.isArray(element.childCells)) {
+			// cell was only defined as a parent of another cell but has no value yet
+			this.input.value = '';
+		} else {
+			// the cell already has a value
+			this.input.value = element.input;
+			if (element.div) {element.div.hidden = true;}
+		}
+		
+		this.currentSelection = cell;
+		this.showSelection(cell);
+		this.ensureCellVisibility(cell);
+		this.showDependencies(cell);
+	}
+	
+	selectMultipleCells(cell1, cell2) {
+		this.saveOldResult();
+		this.currentSelection = [cell1, cell2];
+		this.showSelection(cell1, cell2);
+	}
+	
+	selectRows(row1, row2) {
+		let cell1 = [0, row1];
+		let cell2 = [this.columns - 1, row2];
+		this.selectMultipleCells(cell1, cell2);
+	}
+	
+	selectColumns(column1, column2) {
+		let cell1 = [column1, 0];
+		let cell2 = [column2, this.rows - 1];
+		this.selectMultipleCells(cell1, cell2);
+	}
+	
+	extendCell(event) {
+		console.log('TO DO: implement extend cell');
+	}
+	
+	//------------- EXTEND CELL -> EQUATION FOR MULTIPLE CELLS ------------------------//
+	
+	extendCell(cell) {
+		
+	}
+	
+	//--------- MANAGE GRAPHICS ELEMENTS -----------------------------------------------//
+	
+	showSelection(cellStart, cellStop = undefined) {
+		if (cellStop == undefined) {
+			let [path1, path2] = this.cellBorderPath(cellStart);
+			//this.cellSelection.node.setAttribute('d', path1);
+			this.extendCellButton.node.setAttribute('d', path2);
+			let pos = this.getCellCenter(cellStart);
+			this.input.position = pos;
+			this.showInfoBox(cellStart);
+		} else {
+			let [path1, path2] = this.multiCellBorderPath(cellStart, cellStop);
+			//this.cellSelection.node.setAttribute('d', path1);
+			if (cellStart[0] == cellStop[0] || cellStart[1] == cellStop[1]) {
+				this.extendCellButton.node.setAttribute('d', path2);
+			} else {
+				this.extendCellButton.node.setAttribute('d', '');
+			}
+			this.blur();
+			this.highlightParents.node.setAttribute('d', '');
+			this.highlightChildren.node.setAttribute('d', '');
+			//this.infoBox.node.setAttribute('d', '');
+			this.infoBoxText.hidden = true;
+		}
+	}
+	
+	showSelection2(cellStart, cellStop = undefined) {
+		if (cellStop == undefined) {
+			let [path1, path2] = this.cellBorderPath(cellStart);
+			let pos = this.getCellCenter(cellStart);
+			this.cellSelection2.node.setAttribute('d', path1);
+		} else {
+			let [path1, path2] = this.multiCellBorderPath(cellStart, cellStop);
+			this.cellSelection2.node.setAttribute('d', path1);
+		}
+	}
+	
+	showInfoBox(cell) {
+		let pos = this.getCellCenter(cell);
+		pos = [pos[0] - 0.45 * this.cellSize[0], pos[1] + 0.75 * this.cellSize[1]];
+		this.infoBoxText.position = pos;
+		let text = this.getInfoText(cell);
+		if (text == '') {
+			//this.infoBox.node.setAttribute('d', '');
+			this.infoBoxText.hidden = true;
+		} else {
+			this.infoBoxText.span.innerHTML = text;
+			this.infoBoxText.hidden = false;
+			let bbox = this.infoBoxText.span.getBoundingClientRect();
+			let minX = this.cellSize[0] * cell[0];
+			let maxX = minX + this.infoBoxText.span.scrollWidth + 0.1 * this.cellSize[0];
+			let minY = this.cellSize[1] * (cell[1] + 1);
+			let maxY = minY + this.infoBoxText.span.scrollHeight + 0.5 * this.cellSize[1];
+			let path = `M ${maxX} ${maxY} L ${minX} ${maxY} L ${minX} ${minY} L ${maxX} ${minY} L ${maxX} ${maxY}`;
+			//this.infoBox.node.setAttribute('d', path);
+		}
+	}
+	
+	getInfoText(cell) {
+		let element = this.getCellFromTable(cell);
+		let str;
+		if (element == undefined) {
+			return '';
+		} else if (element.input == undefined) {
+			return '';
+		} else if (element.magEquation.RPN.length == 1 &&  element.magEquation.RPN[0][0] == 'number') {
+			return '';
+		} else {
+			if (element.type == 'equation') {
+				str = `= ${mag.numberToString(element.result)}`;
+			} else if (element.type == 'string') {
+				str = `= NaN<Br>(${element.result})`;
+			}
+			let len = element.parentCells.length;
+			if (len > 0) {
+				str = `${str}<Br>_______________<Br>linked cells:`
+				for (let i = 0; i < len; i++) {
+					let parentCell = element.parentCells[i];
+					if (typeof parentCell == 'string') {
+						let value = mag.variables[parentCell];
+						if (value == undefined) {
+							value = 'NaN';
+						} else {
+							value = mag.numberToString(value);
+						}
+						str = `${str}<Br>- ${parentCell} = ${value}`;
+					} else {
+						// cell range
+						let value = mag.cellRangeToArray(parentCell[0], parentCell[1]);
+						value = mag.numberToString(value);
+						str = `${str}<Br>- ${parentCell[0]}:${parentCell[1]} = ${value}`;
+					}
+				}
+			}
+		}
+		return str;
+	}
+	
+	cellBorderPath(cell) {
+		let center = this.getCellCenter(cell);
+		let minX = center[0] - this.cellSize[0] / 2;
+		let maxX = center[0] + this.cellSize[0] / 2;
+		let minY = center[1] - this.cellSize[1] / 2;
+		let maxY = center[1] + this.cellSize[1] / 2;
+		let d = this.extendCellButtonSize;
+		let path1 = `M ${maxX} ${maxY} L ${minX} ${maxY} L ${minX} ${minY} L ${maxX} ${minY} L ${maxX} ${maxY}`;
+		let path2 = `M ${maxX+d} ${maxY+d} L ${maxX+d} ${maxY-d} L ${maxX-d} ${maxY-d} L ${maxX-d} ${maxY+d} L ${maxX+d} ${maxY+d}`;
+		return [path1, path2];
+	}
+	
+	multiCellBorderPath(cellStart, cellStop) {
+		let center1 = this.getCellCenter(cellStart);
+		let center2 = this.getCellCenter(cellStop);
+		let minMax = mag.listMinMax([center1, center2]);
+		let minX = minMax[0][0] - this.cellSize[0] / 2;
+		let maxX = minMax[1][0] + this.cellSize[0] / 2;
+		let minY = minMax[0][1] - this.cellSize[1] / 2;
+		let maxY = minMax[1][1] + this.cellSize[1] / 2;
+		let d = this.extendCellButtonSize;
+		let path1 = `M ${minX} ${minY} L ${minX} ${maxY} L ${maxX} ${maxY} L ${maxX} ${minY} L ${minX} ${minY}`;
+		let path2 = `M ${maxX+d} ${maxY+d} L ${maxX+d} ${maxY-d} L ${maxX-d} ${maxY-d} L ${maxX-d} ${maxY+d} L ${maxX+d} ${maxY+d}`;
+		return [path1, path2];
+	}
+	
+	showDependencies(cell) {
+		let element = this.getCellFromTable(cell);
+		
+		if (element != undefined) {
+			// set path for parent cells
+			let path = '';
+			let len = element.parentCells.length;
+			for (let i = 0; i < len; i++) {
+				let parentCell = element.parentCells[i];
+				if (typeof parentCell == 'string') {
+					// single cells
+					path += this.cellBorderPath(mag.stringToCell(parentCell))[0];
+				} else {
+					// cell range
+					let cell1 = mag.stringToCell(parentCell[0]);
+					let cell2 = mag.stringToCell(parentCell[1]);
+					path += this.multiCellBorderPath(cell1, cell2)[0];
+				}
+			}
+			this.highlightParents.node.setAttribute('d', path);
+		
+			// set path for children cells
+			path = '';
+			len = element.childCells.length;
+			for (let i = 0; i < len; i++) {
+				path += this.cellBorderPath(mag.stringToCell(element.childCells[i]))[0];
+			}
+			this.highlightChildren.node.setAttribute('d', path);
+		} else {
+			this.highlightParents.node.setAttribute('d', '');
+			this.highlightChildren.node.setAttribute('d', '');
+		}
+	}
+	
+	ensureCellVisibility(cell) {
+		let pos = this.getCellCenter(cell);
+		let performScroll = false;
+		
+		// check x position
+		let minCell = pos[0] - this.cellSize[0] / 2;
+		let maxCell = pos[0] + this.cellSize[0] / 2;
+		let minTable = this.labelSize[0] - this.table.position[0];
+		let maxTable = this.sizeAbs[0] - this.table.position[0];
+		if (minCell < minTable) {
+			this.scrollOuterDiv.node.scrollLeft = minCell;
+			performScroll = true;
+		} else if (maxCell > maxTable) {
+			this.scrollOuterDiv.node.scrollLeft = maxCell - this.sizeAbs[0] + this.labelSize[0];
+			performScroll = true;
+		}
+		
+		// check y position
+		minCell = pos[1] - this.cellSize[1] / 2;
+		maxCell = pos[1] + this.cellSize[1] / 2;
+		minTable = this.labelSize[1] - this.table.position[1];
+		maxTable = this.sizeAbs[1] - this.table.position[1];
+		if (minCell < minTable) {
+			this.scrollOuterDiv.node.scrollTop = minCell;
+			performScroll = true;
+		} else if (maxCell > maxTable) {
+			this.scrollOuterDiv.node.scrollTop = maxCell - this.sizeAbs[1] + this.labelSize[1];
+			performScroll = true;
+		}
+		
+		if (performScroll) {
+			this.scroll();
+		}
+	}
+	
+	//------------- ADD VALUES INTO TABLE -------------------------------//
+	
+	saveOldResult() {
+		if (this.status == 'typing' || this.status == 'selected') {
+			// save value of the previously selected cell
+			let cell = this.getCellFromTable(this.currentSelection);
+			let value = this.input.value;
+			if (cell == undefined) {
+				// cell was not yet defined
+				if (value != '') {
+					// if user has entered a value, initialize the cell
+					this.addCellToTable(this.currentSelection, value);
+				}
+			} else if (cell.div == undefined && Array.isArray(cell.childCells)) {
+				// cell was only defined as a parent of another cell but has no value yet
+				if (value != '') {
+					// if user has entered a value, initialize the cell
+					this.addCellToTable(this.currentSelection, value, cell.childCells);
+				}
+			} else {
+				// the cell has previously been initialized and has to be updated
+				this.updateCell(this.currentSelection, this.input.value);
+				if (cell.div) {cell.div.hidden = false;}
+			}
+		}
+	}
+	
+	addCellToTable(cell, value, children = []) {
+		let type;
+		let div;
+		let str = mag.cellToString(cell);
+		//console.log(`add cell: ${str}`);
+		let center = this.getCellCenter(cell);
+		let eq = new magEquation(value);
+		let result = eq.getValue();
+		// if value can be treated as an equation, the result is shown, otherwise the input string
+		if (typeof result == 'string') {
+			type = 'string';
+			div = new magDOMelement(this.table, 'div', {position: center, size: this.cellSizeSmall,
+				alignment: 11, scaling: 0, font: this.font, stroke: {style: 'none'}, text: value, layer: 'bottom'});
+		} else {
+			type = 'equation';
+			div = new magDOMelement(this.table, 'div', {position: center, size: this.cellSizeSmall, layer: 'bottom',
+				alignment: 11, scaling: 0, font: this.font, stroke: {style: 'none'}, text: mag.numberToString(result)});
+			mag.variables[str] = result;
+		}
+		let newElement = {div: div, input: value, magEquation: eq, result: result, type: type, childCells: children, parentCells: []};
+		// add the element to the valueMatrix
+		this.valueMatrix[str] = newElement;
+		
+		// check for depencies on other cells
+		this.checkDependencies(newElement, str);
+		
+		// update potential children
+		this.handleCellChange(str);
+	}
+	
+	updateCell(cell, value) {
+		let str = mag.cellToString(cell);
+		let element = this.valueMatrix[str];
+		if (element.input != value) {
+			// input of cell has changed -> calculate new values
+			element.input = value;
+			element.magEquation.equationString = value;
+			this.calculateCellResult(str);
+			this.checkDependencies(element, str);
+			this.handleCellChange(str);
+		}
+	}
+	
+	calculateCellResult(cellString) {
+		let element = this.valueMatrix[cellString];
+		let result = element.magEquation.getValue();
+		element.result = result;
+		if (typeof result == 'string') {
+			// if element was previously an equation, remove it from variable list
+			if (element.type == 'equation') {
+				delete mag.variables[cellString];
+			}
+			element.type = 'string';
+			element.div.text = element.input;
+		} else {
+			element.type = 'equation';
+			element.div.text = mag.numberToString(result);
+			// add result to variable list
+			mag.variables[cellString] = result;
+		}
+	
 	}
 }
 
@@ -5655,6 +7168,69 @@ class magSVGelement extends magElement {
 	
 	get fill() {
 		return this._fill;
+	}
+}
+
+class magSVGpath0 extends magSVGelement {
+	
+	constructor(canvas, path, options = {}) {
+		options = mag.mergeObjects(options, magDefaults.magSVGpath);
+		super(canvas, 'path', options);
+		this.path = path;
+	}
+	
+	setElement() {
+		let pathString = '';
+		let len = this._path.length;
+		for (let i=0; i<len; i++) {
+			pathString = `${pathString} ${this._getCommandString(this._path[i])}`;
+		}
+		this.node.setAttribute('d', pathString);
+	}
+	
+	set path(list) {
+		this._path = list;
+		this.setElement();
+	}
+	
+	get path() {
+		return this._path;
+	}
+	
+	// transform a relative command into an absolute one
+	_getCommandString(command) {
+		let point1, point2, point3;
+		switch (command[0]) {
+			case 'M':
+			case 'L':
+			case 'T':
+				// commands with syntax ['X', x, y]
+				point1 = this.pointAbs([command[1], command[2]]);
+				return `${command[0]} ${point1[0]} ${point1[1]}`;
+			case 'S':
+			case 'Q':
+				// commands with syntax ['X', x1, y1, x, y]
+				point1 = this.pointAbs([command[1], command[2]]);
+				point2 = this.pointAbs([command[3], command[4]]);
+				return `${command[0]} ${point1[0]} ${point1[1]} ${point2[0]} ${point2[1]}`;
+			case 'C':
+				// commands with syntax ['X', x1, y1, x2, y2, x, y]
+				point1 = this.pointAbs([command[1], command[2]]);
+				point2 = this.pointAbs([command[3], command[4]]);
+				point3 = this.pointAbs([command[5], command[6]]);
+				return `${command[0]} ${point1[0]} ${point1[1]} ${point2[0]} ${point2[1]} ${point3[0]} ${point3[1]}`;
+			case 'A':
+				// arc with syntax ['A', rx, ry, rot, f1, f2, x, y]
+				point1 = this.pointAbs([command[1], command[2]]);
+				point2 = this.pointAbs([command[6], command[7]]);
+				return `${command[0]} ${point1[0]} ${point1[1]} ${command[3]} ${command[4]} ${command[5]} ${point2[0]} ${point2[1]}`;
+			case 'Z': 
+				// close path
+				return 'Z';
+			default:
+				console.log(`ERROR: unknown <path> command: ${command}`);
+				return [];
+		}
 	}
 }
 
